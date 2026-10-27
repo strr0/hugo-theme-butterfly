@@ -1,0 +1,17 @@
+{{ define "main" }}
+  {{/* 首页只分页文章（原版 index_generator 仅列 posts，about 等独立页不入 feed）；置顶文章排前，其余按日期倒序 */}}
+  {{ $posts := (.Paginate (where .Site.RegularPages "Type" "posts")).Pages }}
+  {{ $topPosts := where $posts "Params.top" true }}
+  {{ $normalPosts := where $posts "Params.top" "!=" true }}
+  {{ $all := $topPosts | append $normalPosts }}
+  <div id="recent-posts" class="recent-posts">
+    {{ partial "category_bar.html" . }}
+    {{ $index := 0 }}
+    {{ $isFirst := not .Paginator.HasPrev }}
+    {{ range $p := $all }}
+      {{ partial "post-item.html" (dict "article" $p "index" $index "isHome" true "isFirst" $isFirst) }}
+      {{ $index = add $index 1 }}
+    {{ end }}
+    {{ partial "pagination.html" . }}
+  </div>
+{{ end }}

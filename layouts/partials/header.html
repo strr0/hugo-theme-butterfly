@@ -1,0 +1,156 @@
+{{ $isHome := .IsHome }}
+{{ $isPost := and (not $isHome) (eq .Section "posts") }}
+{{ $topImg := "" }}
+{{ $headerClass := "not-top-img" }}
+{{ if $isHome }}
+  {{ $topImg = site.Params.index_img | default "" }}
+{{ else if $isPost }}
+  {{/* 原版：page.top_img || page.cover || page.randomcover，移植版回退链用 default_top_img */}}
+  {{ $topImg = .Params.top_img | default .Params.cover | default site.Params.default_top_img | default "" }}
+{{ else }}
+  {{ $topImg = .Params.top_img | default site.Params.default_top_img | default "" }}
+{{ end }}
+{{ if $topImg }}
+  {{ if $isPost }}
+    {{ $headerClass = "post-bg" }}
+  {{ else }}
+    {{ $headerClass = cond $isHome "full_page" "not-home-page" }}
+  {{ end }}
+{{ end }}
+{{/* 原版文章 banner 容器无背景图（mainTone 关闭时背景来自 #post-top-bg 模糊图），仅非文章页用内联 bg */}}
+{{ $bgStyle := "" }}
+{{ if and $topImg (not $isPost) }}{{ $bgStyle = printf "background: url('%s') top / cover no-repeat fixed;" $topImg }}{{ end }}
+<header id="page-header" class="{{ $headerClass }}"{{ with $bgStyle }} style="{{ . }}"{{ end }}>
+  <nav id="nav">
+    <span id="nav-group">
+      <span id="blog_name">
+        <a id="site-name" href="{{ "/" | relURL }}" accesskey="h" title="回到首页">
+          <i class="anzhiyufont anzhiyu-icon-house-chimney"></i>
+          <div class="title">{{ site.Title }}</div>
+        </a>
+      </span>
+      <div id="menus">
+        <div class="menus_items">
+          {{ range site.Menus.main }}
+            <div class="menus_item">
+              <a class="site-page" href="{{ .URL | relURL }}">
+                {{ with .Params.icon }}<i class="anzhiyufont {{ . }}"></i>{{ end }}
+                <span>{{ .Name }}</span>
+              </a>
+            </div>
+          {{ end }}
+          <div class="menus_item" id="randomPost_button">
+            <a class="site-page" href="javascript:void(0);" onclick="toRandomPost()" title="随便逛逛">
+              <i class="anzhiyufont anzhiyu-icon-dice"></i>
+              <span>文章</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div id="nav-right">
+        {{ if site.Params.search.enable }}
+        <div class="nav-button" id="search-button">
+          <a class="site-page social-icon search" href="javascript:void(0);" title="站内搜索" accesskey="s">
+            <i class="anzhiyufont anzhiyu-icon-magnifying-glass"></i>
+            <span>搜索</span>
+          </a>
+        </div>
+        {{ end }}
+        <div class="nav-button" id="darkmode-button">
+          <a class="site-page" href="javascript:void(0);" onclick="switchTheme()" title="切换深色/浅色模式">
+            <i class="anzhiyufont anzhiyu-icon-moon"></i>
+          </a>
+        </div>
+        <div class="nav-button" id="nav-totop">
+          <a class="site-page totopbtn" href="javascript:void(0);" onclick="scrollToTop()">
+            <span id="percent">0%</span>
+            <i class="anzhiyufont anzhiyu-icon-arrow-up"></i>
+          </a>
+        </div>
+        <div id="toggle-menu">
+          <a class="site-page" href="javascript:void(0);" title="查看菜单">
+            <i class="anzhiyufont anzhiyu-icon-bars"></i>
+          </a>
+        </div>
+      </div>
+    </span>
+  </nav>
+  {{ if and $isHome $topImg }}
+    <div id="site-info">
+      <h1 id="site-title">{{ site.Title }}</h1>
+      <div id="site-subtitle"><span id="subtitle"></span></div>
+      {{ with site.Params.social }}
+        <div id="site_social_icons">
+          {{ partial "social.html" $ }}
+        </div>
+      {{ end }}
+    </div>
+    <div id="scroll-down" onclick="scrollToContent()">
+      <i class="anzhiyufont anzhiyu-icon-angle-down scroll-down-effects"></i>
+    </div>
+  {{ else if and $isPost $topImg }}
+    {{/* 文章页 banner：对照原版 post-info.pug（去第三方统计/定位） */}}
+    <div id="post-info">
+      <div id="post-firstinfo">
+        <div class="meta-firstline">
+          <a class="post-meta-original">原创</a>
+          {{ $pm := site.Params.post_meta | default dict }}
+          {{ if and $pm.categories .Params.categories }}
+            <span class="post-meta-categories">
+              <span class="post-meta-separator"></span>
+              {{ range $i, $c := .Params.categories }}
+                {{ if $i }}<i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i>{{ end }}
+                <i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i>
+                <a class="post-meta-categories" href="{{ "/categories/" | relURL }}{{ $c | urlize }}/">{{ $c }}</a>
+              {{ end }}
+            </span>
+          {{ end }}
+          {{ if and $pm.tags .Params.tags }}
+            <span class="article-meta tags">
+              {{ range .Params.tags }}
+                <a class="article-meta__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/"><span><i class="anzhiyufont anzhiyu-icon-hashtag"></i>{{ . }}</span></a>
+              {{ end }}
+            </span>
+          {{ end }}
+        </div>
+      </div>
+      <h1 class="post-title" itemprop="name headline">{{ .Title }}</h1>
+      <div id="post-meta">
+        <div class="meta-firstline">
+          {{ if $pm.date_type }}
+            <span class="post-meta-date">
+              {{ if eq $pm.date_type "updated" }}
+                <i class="anzhiyufont anzhiyu-icon-history post-meta-icon"></i>
+                <span class="post-meta-label">更新于</span>
+                <time itemprop="dateModified" datetime="{{ (.Lastmod.Format "2006-01-02T15:04:05Z07:00") }}" title="更新于 {{ .Lastmod.Format "2006-01-02 15:04" }}">{{ .Lastmod.Format "2006-01-02" }}</time>
+              {{ else }}
+                <i class="anzhiyufont anzhiyu-icon-calendar-days post-meta-icon"></i>
+                <span class="post-meta-label">发表于</span>
+                <time itemprop="dateCreated datePublished" datetime="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}" title="发表于 {{ .Date.Format "2006-01-02 15:04" }}">{{ .Date.Format "2006-01-02" }}</time>
+              {{ end }}
+            </span>
+          {{ end }}
+        </div>
+        <div class="meta-secondline">
+          <span class="post-meta-separator"></span>
+          <span class="post-meta-wordcount">
+            <i class="anzhiyufont anzhiyu-icon-file-word post-meta-icon" title="文章字数"></i>
+            <span class="post-meta-label" title="文章字数">字数:</span>
+            <span class="word-count" title="文章字数">{{ .WordCount }}</span>
+            <span class="post-meta-separator"></span>
+            <i class="anzhiyufont anzhiyu-icon-clock post-meta-icon" title="阅读时长"></i>
+            <span class="post-meta-label" title="阅读时长">阅读时长:</span>
+            <span>{{ .ReadingTime }}分</span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div id="post-top-cover">
+      <img id="post-top-bg" src="{{ $topImg }}" alt="封面">
+    </div>
+  {{ else if and (not $isHome) $topImg }}
+    <div id="page-site-info">
+      <h1 id="site-title">{{ .Title }}</h1>
+    </div>
+  {{ end }}
+</header>

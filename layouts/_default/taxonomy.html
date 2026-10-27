@@ -1,0 +1,44 @@
+{{ define "main" }}
+  {{/* Hugo 里 _default/taxonomy.html 会同时命中 taxonomy 列表页与 term 页，必须再判 .Kind */}}
+  {{ if and (eq .Kind "term") (eq .Data.Plural "categories") }}
+    {{/* 分类 term 页——照官方 /categories/xxx：顶部分类条（当前分类由 butterfly.js 的 categoriesBarActive 打 .select）
+         + 与首页同款文章卡流 + 侧栏；官方该页无「分类 - xxx」标题卡，标题信息由高亮胶囊承载 */}}
+    <div id="recent-posts" class="recent-posts">
+      {{ partial "category_bar.html" . }}
+      {{ partial "post_cards.html" . }}
+    </div>
+  {{ else if and (eq .Kind "term") (eq .Data.Plural "tags") }}
+    {{/* 标签 term 页——照官方 /tags/xxx：顶部 TagBar 标签胶囊条（当前标签 .selected）+ 文章卡流 + 侧栏 */}}
+    <div id="recent-posts" class="recent-posts">
+      {{ partial "tag_bar.html" . }}
+      {{ partial "post_cards.html" . }}
+    </div>
+  {{ else if and (eq .Kind "taxonomy") (eq .Data.Plural "categories") }}
+    {{/* 分类总览页（首页分类条「更多」进入）——照官方预览站 blog.anheyu.com /categories/ 的 CategoryPage 模块：
+         居中标题 + 居中换行的文件夹图标胶囊，不显示文章数；点胶囊进入对应 term 页 */}}
+    <div class="category-page">
+      <h1 class="page-title">分类</h1>
+      <div class="category-cloud-list">
+        {{ range site.Taxonomies.categories.ByCount }}
+          <a class="category-item" href="{{ .Page.RelPermalink }}">
+            <i class="anzhiyufont anzhiyu-icon-folder-open"></i>{{ .Page.Title }}
+          </a>
+        {{ end }}
+      </div>
+    </div>
+  {{ else if and (eq .Kind "taxonomy") (eq .Data.Plural "tags") }}
+    {{/* 标签总览页——同上参照官方 /tags/ 的 TagPage 模块：# + 标签名 + 文章数小方块 */}}
+    <div class="tag-page">
+      <h1 class="page-title">标签</h1>
+      <div class="tag-cloud-list">
+        {{ range site.Taxonomies.tags.ByCount }}
+          <a class="tag-item" href="{{ .Page.RelPermalink }}">
+            <span class="tags-punctuation">#</span>{{ .Page.Title }}<span class="tags-page-count">{{ .Count }}</span>
+          </a>
+        {{ end }}
+      </div>
+    </div>
+  {{ else }}
+    {{ partial "list-body.html" . }}
+  {{ end }}
+{{ end }}

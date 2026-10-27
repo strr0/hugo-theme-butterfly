@@ -1,0 +1,6 @@
+{{ $icons := site.Params.social_icons | default dict }}
+{{ range $name, $link := site.Params.social }}
+  <a class="social-icon" href="{{ $link }}" title="{{ $name }}" target="_blank" rel="noopener external nofollow">
+    <i class="anzhiyufont {{ index $icons $name | default "anzhiyu-icon-link" }}"></i>
+  </a>
+{{ end }}

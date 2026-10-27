@@ -1,0 +1,71 @@
+{{/* 首页/列表页文章卡片，index 用于封面左右交替 */}}
+{{ $index := .index }}
+{{ $article := .article }}
+{{ $coverCfg := site.Params.cover | default dict }}
+{{ $meta := site.Params.post_meta | default dict }}
+{{ $cover := $article.Params.cover | default "" }}
+{{ $showCover := and $cover (ne $coverCfg.index_enable false) }}
+{{ $position := $coverCfg.position | default "left" }}
+{{ $leftOrRight := "left" }}
+{{ if eq $position "right" }}{{ $leftOrRight = "right" }}{{ else if eq $position "both" }}{{ if mod $index 2 }}{{ $leftOrRight = "right" }}{{ end }}{{ end }}
+{{ $isLatest := and .isHome (eq $index 0) .isFirst }}
+{{/* 原版 newPost：全站发布日期最新的一篇文章显示“最新” */}}
+{{ $newest := first 1 (where site.RegularPages "Type" "posts") }}
+{{ $isNew := and .isHome $newest (eq $article.Date (index $newest 0).Date) }}
+<div class="recent-post-item{{ if $isLatest }} lastestpost-item{{ end }}" onclick="location.href='{{ $article.RelPermalink }}'">
+  {{ if $showCover }}
+    <div class="post_cover {{ $leftOrRight }}">
+      <a href="{{ $article.RelPermalink }}" title="{{ $article.Title }}" style="display: flex;height: 100%;">
+        <img class="post_bg" loading="lazy" alt="{{ $article.Title }}" style="pointer-events: none"
+          src="{{ $article.Params.cover }}" onerror="this.onerror=null;this.src='/img/404.jpg'">
+      </a>
+    </div>
+  {{ end }}
+  <div class="recent-post-info{{ if not $showCover }} no-cover{{ end }}">
+    <div class="recent-post-info-top">
+      <div class="recent-post-info-top-tips">
+        {{ if $article.Params.top }}
+          <span class="article-meta sticky-warp">
+            <i class="anzhiyufont anzhiyu-icon-thumbtack sticky"></i>
+            <span class="sticky">置顶</span>
+          </span>
+        {{ end }}
+        {{ if and (ne $meta.categories false) $article.Params.categories }}
+          {{ range $article.Params.categories }}
+            <div class="article-categories-original">{{ . }}</div>
+          {{ end }}
+        {{ end }}
+        {{ if $isNew }}<span class="newPost">最新</span>{{ end }}
+        <a class="unvisited-post" href="{{ $article.RelPermalink }}" title="{{ $article.Title }}">未读</a>
+      </div>
+      <a class="article-title" href="{{ $article.RelPermalink }}" title="{{ $article.Title }}">{{ $article.Title }}</a>
+    </div>
+    <div class="article-meta-wrap">
+      {{ $dateType := $meta.date_type | default "created" }}
+      {{ $pubDate := cond (eq $dateType "updated") $article.Lastmod $article.Date }}
+      {{ with $dateType }}
+        <span class="post-meta-date">
+          {{/* 原版 date_format: simple 时隐藏日期图标 */}}
+          {{ if ne ($meta.date_format | default "simple") "simple" }}
+            <i class="anzhiyufont {{ if eq . "updated" }}anzhiyu-icon-history{{ else }}anzhiyu-icon-calendar-days{{ end }}"></i>
+          {{ end }}
+          <span class="article-meta-label">创建</span>
+          <time datetime="{{ $pubDate.Format "2006-01-02" }}"
+            title="{{ if eq . "updated" }}更新于{{ else }}创建于{{ end }} {{ $pubDate.Format "2006-01-02 15:04:05" }}">
+            {{ $pubDate.Format "2006-01-02" }}
+          </time>
+        </span>
+      {{ end }}
+      {{ if and (ne $meta.tags false) $article.Params.tags }}
+        <span class="article-meta tags">
+          {{ range $article.Params.tags }}
+            <a class="article-meta__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/" onclick="window.event.cancelBubble=true;">
+              <span><i class="anzhiyufont anzhiyu-icon-hashtag"></i>{{ . }}</span>
+            </a>
+          {{ end }}
+        </span>
+      {{ end }}
+    </div>
+    <div class="content">{{ $article.Summary | plainify | truncate 200 }}</div>
+  </div>
+</div>

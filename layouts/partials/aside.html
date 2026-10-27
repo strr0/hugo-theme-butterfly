@@ -1,0 +1,162 @@
+{{ $aside := site.Params.aside | default dict }}
+{{ $authorStatus := site.Params.author_status | default dict }}
+{{ if ne $aside.enable false }}
+  <div id="aside-content" class="aside-content">
+    {{ if ne $aside.card_author false }}
+      <div class="card-widget card-info">
+        <div class="card-content">
+          {{ if $authorStatus.enable }}
+            <div class="author-info__sayhi" id="author-info__sayhi" onclick="changeSayHelloText()"></div>
+          {{ end }}
+          <div class="author-info-avatar">
+            <img class="avatar-img" src="{{ site.Params.avatar }}" alt="avatar" onerror="this.onerror=null;this.src='/img/friend_404.gif'">
+          </div>
+          <div class="author-info__description">{{ site.Params.description }}</div>
+          <div class="author-info__bottom-group">
+            <a class="author-info__bottom-group-left" href="{{ site.Params.aside.author_link | default "/" | relURL }}">
+              <h1 class="author-info__name">{{ site.Params.author | default site.Title }}</h1>
+              <div class="author-info__desc">{{ site.Params.subtitle }}</div>
+            </a>
+            <div class="card-info-social-icons is-center">
+              {{ partial "social.html" $ }}
+            </div>
+          </div>
+        </div>
+      </div>
+      {{ with $authorStatus.skills }}
+      <script>window.authorStatusSkills = {{ . | jsonify | safeJS }};</script>
+      {{ end }}
+    {{ end }}
+
+    {{ with $aside.card_announcement }}
+      <div class="card-widget card-notification">
+        <div class="card-content">
+          <div class="item-headline"><i class="anzhiyufont anzhiyu-icon-bullhorn"></i><span>公告</span></div>
+          <div class="announcement-content">{{ . }}</div>
+        </div>
+      </div>
+    {{ end }}
+
+    {{/* 原版文章页侧栏不含分类卡（widget/index.pug is_post 分支） */}}
+    {{ if and (ne $aside.card_categories false) (ne $.Section "posts") }}
+      <div class="card-widget card-categories">
+        <div class="item-headline">
+          <i class="anzhiyufont anzhiyu-icon-folder-open"></i>
+          <span>分类</span>
+        </div>
+        <ul class="card-category-list">
+          {{ range site.Taxonomies.categories.ByCount }}
+            <li class="card-category-list-item">
+              <a class="card-category-list-link" href="{{ .Page.RelPermalink }}">
+                <span class="card-category-list-name">{{ .Page.Title }}</span>
+                <span class="card-category-list-count">{{ .Count }}</span>
+              </a>
+            </li>
+          {{ end }}
+        </ul>
+      </div>
+    {{ end }}
+
+    <div class="sticky_layout">
+      {{/* 文章目录卡（原版 widget/card_post_toc.pug，仅文章页且配置开启时渲染，sticky 首位） */}}
+      {{ $tocCfg := site.Params.toc | default dict }}
+      {{ $hasToc := and (eq $.Section "posts") (gt (len (plainify .TableOfContents)) 0) }}
+      {{ if and $tocCfg.enable $hasToc }}
+        <div class="card-widget" id="card-toc">
+          <div class="item-headline">
+            <i class="anzhiyufont anzhiyu-icon-bars"></i>
+            <span>文章目录</span>
+            <span class="toc-percentage"></span>
+          </div>
+          <div class="toc-content{{ if $tocCfg.expand }} is-expand{{ end }}">
+            {{ .TableOfContents }}
+          </div>
+        </div>
+      {{ end }}
+      {{/* 最近发布卡（原版文章页 sticky_layout 仅 toc + recent_post） */}}
+      {{ if eq $.Section "posts" }}
+        <div class="card-widget card-recent-post">
+          <div class="item-headline">
+            <i class="anzhiyufont anzhiyu-icon-history"></i>
+            <span>最近发布</span>
+          </div>
+          <div class="aside-list">
+            {{ range first 5 (where site.RegularPages "Type" "posts") }}
+              {{ $p := . }}
+              {{ $cover := .Params.cover | default "" }}
+              <div class="aside-list-item{{ if not $cover }} no-cover{{ end }}">
+                {{ with $cover }}<a class="thumbnail" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}"><img src="{{ . }}" alt="{{ $p.Title }}"></a>{{ end }}
+                <div class="content">
+                  <a class="title" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}">{{ $p.Title }}</a>
+                  <time datetime="{{ $p.Date.Format "2006-01-02T15:04:05Z07:00" }}" title="发表于 {{ $p.Date.Format "2006-01-02" }}">{{ $p.Date.Format "2006-01-02" }}</time>
+                </div>
+              </div>
+            {{ end }}
+          </div>
+        </div>
+      {{ end }}
+      {{ if ne $.Section "posts" }}
+      {{ if ne $aside.card_tags false }}
+        <div class="card-widget card-tag-cloud">
+          <div class="item-headline">
+            <i class="anzhiyufont anzhiyu-icon-hashtag"></i>
+            <span>标签</span>
+          </div>
+          <div class="card-content">
+            {{ range site.Taxonomies.tags }}
+              <a href="{{ .Page.RelPermalink }}" style="font-size: {{ math.Round (add 0.85 (mul (div (float .Count) 3.0) 0.25)) }}rem;" title="{{ .Page.Title }}">{{ .Page.Title }}<sup>{{ .Count }}</sup></a>
+            {{ end }}
+          </div>
+        </div>
+      {{ end }}
+
+      {{ if ne $aside.card_archives false }}
+        <div class="card-widget card-archives">
+          <div class="item-headline">
+            <i class="anzhiyufont anzhiyu-icon-box-archive"></i>
+            <span>归档</span>
+          </div>
+          <ul class="card-archive-list">
+            {{ range (where site.RegularPages "Type" "posts").GroupByDate "2006-01" }}
+              <li class="card-archive-list-item">
+                <a class="card-archive-list-link" href="{{ "/posts/" | relURL }}#{{ .Key }}">
+                  <span class="card-archive-list-date">{{ replace .Key "-" "年" }}月</span>
+                  <span class="card-archive-list-count">{{ len .Pages }}</span>
+                </a>
+              </li>
+            {{ end }}
+          </ul>
+        </div>
+      {{ end }}
+
+      {{/* 站点信息卡（原版 widget/card_webinfo.pug：标题行原版 CSS 隐藏，每行图标+名称左、数值右） */}}
+      {{ if ne $aside.card_webinfo false }}
+        <div class="card-widget card-webinfo">
+          <div class="item-headline">
+            <i class="anzhiyufont anzhiyu-icon-chart-line"></i>
+            <span>网站资讯</span>
+          </div>
+          <div class="webinfo">
+            <div class="webinfo-item">
+              <div class="webinfo-item-title">
+                <i class="anzhiyufont anzhiyu-icon-file-lines"></i>
+                <div class="item-name">文章总数 :</div>
+              </div>
+              <div class="item-count">{{ len (where site.RegularPages "Type" "posts") }}</div>
+            </div>
+            {{ with site.Params.site_start_time }}
+              <div class="webinfo-item">
+                <div class="webinfo-item-title">
+                  <i class="anzhiyufont anzhiyu-icon-stopwatch"></i>
+                  <div class="item-name">建站天数 :</div>
+                </div>
+                <div class="item-count" id="webinfo-runtime" data-publishDate="{{ . }}">-</div>
+              </div>
+            {{ end }}
+          </div>
+        </div>
+      {{ end }}
+      {{ end }}{{/* 非文章侧栏 cards end */}}
+    </div>
+  </div>
+{{ end }}

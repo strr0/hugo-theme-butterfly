@@ -1,0 +1,14 @@
+<div id="rightside">
+  {{/* 移动端目录开关按钮（原版 rightside.pug toc 项，仅文章页且有目录时渲染） */}}
+  {{ if and (eq .Section "posts") (gt (len (plainify .TableOfContents)) 0) }}
+    <div class="rightside-item" id="mobile-toc-button" title="目录" onclick="toggleToc(this)">
+      <i class="anzhiyufont anzhiyu-icon-list-ul"></i>
+    </div>
+  {{ end }}
+  <div class="rightside-item" id="toggle-mode" title="切换深色/浅色模式" onclick="switchTheme()">
+    <i class="anzhiyufont anzhiyu-icon-moon"></i>
+  </div>
+  <div class="rightside-item" id="toTop-button" title="返回顶部" onclick="scrollToTop()">
+    <i class="anzhiyufont anzhiyu-icon-arrow-up"></i>
+  </div>
+</div>

@@ -1,0 +1,37 @@
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+{{ $title := .Title }}
+{{ if .IsHome }}
+  <title>{{ site.Title }}{{ with site.Params.subtitle }} - {{ . }}{{ end }}</title>
+{{ else }}
+  <title>{{ $title }} | {{ site.Title }}</title>
+{{ end }}
+<meta name="author" content="{{ site.Params.author | default site.Title }}">
+<meta name="keywords" content="{{ with .Params.tags }}{{ delimit . "," }}{{ else }}{{ site.Title }}{{ end }}">
+<meta name="description" content="{{ .Description | default site.Params.description }}">
+<meta name="theme-color" content="#ffffff">
+{{ with site.Params.favicon }}<link rel="icon{{ if hasSuffix . "ico" }}-shortcut{{ end }}" href="{{ . | relURL }}">{{ end }}
+
+{{/* 深色模式预初始化，避免闪白 */}}
+<script>
+  (function () {
+    var saved = localStorage.getItem('theme');
+    var prefer = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var mode = saved || (prefer ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', mode);
+  })();
+</script>
+
+{{ with site.Params.iconfont_css }}<link rel="stylesheet" href="{{ . }}">{{ end }}
+{{ $css := resources.Get "css/butterfly.css" | minify | fingerprint }}
+<link rel="stylesheet" href="{{ $css.RelPermalink }}">
+
+{{/* 全局配置与随机文章列表 */}}
+<script>
+  var butterflyConfig = {
+    subtitleLines: {{ site.Params.subtitle_js.lines | default (slice site.Params.subtitle) | jsonify }},
+    siteStartTime: {{ site.Params.site_start_time | default "" | jsonify }}
+  };
+  var postList = [{{ range first 200 (where site.RegularPages "Type" "posts") }}"{{ .RelPermalink }}",{{ end }}];
+</script>

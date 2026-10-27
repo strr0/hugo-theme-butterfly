@@ -1,0 +1,8 @@
+{{/* 文章卡片流 + 分页（首页 / 分类·标签 term 页 / 通用列表页共用），上下文为页面 page */}}
+{{ $index := 0 }}
+{{ range $p := .Paginator.Pages }}
+  {{/* isHome 在 post-item 里只用来控制「最新」角标，官方 term 页卡片同样带该角标，故一并传 true */}}
+  {{ partial "post-item.html" (dict "article" $p "index" $index "isHome" true "isFirst" false) }}
+  {{ $index = add $index 1 }}
+{{ end }}
+{{ partial "pagination.html" . }}

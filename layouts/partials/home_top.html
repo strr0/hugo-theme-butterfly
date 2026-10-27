@@ -1,0 +1,107 @@
+{{ $homeTop := site.Params.home_top }}
+{{ if and $homeTop $homeTop.enable .IsHome }}
+  <div id="home_top">
+    <div class="swiper_container_card" style="height: auto;width: 100%">
+      <div id="bannerGroup">
+        <div id="random-banner">
+          <div class="banners-title">
+            <div class="banners-title-big">{{ $homeTop.title | default "生活明朗" }}</div>
+            <div class="banners-title-big">{{ $homeTop.subTitle | default "万物可爱。" }}</div>
+            <div class="banners-title-small">{{ $homeTop.siteText | default site.Title }}</div>
+          </div>
+          {{/* 卡片背景的创意图标带（官方 Next 版 .skillsTagsGroupAll，数据在站点 data/creativity.yml） */}}
+          {{ $creativity := hugo.Data.creativity | default dict }}
+          {{ $icons := $creativity.list | default (slice) }}
+          {{ if $icons }}
+            {{/* 官方将列表重复一份，配合 translateX(-50%) 的 rowup 动画做无缝无限滚动 */}}
+            {{ $doubled := slice }}
+            {{ range $icons }}{{ $doubled = $doubled | append . }}{{ end }}
+            {{ range $icons }}{{ $doubled = $doubled | append . }}{{ end }}
+            {{ $pairCount := div (len $doubled) 2 }}
+            <div class="skills-tags-group-all">
+              <div class="tags-group-wrapper">
+                {{ range $p := seq 0 (sub $pairCount 1) }}
+                  <div class="tags-group-icon-pair">
+                    {{ range (slice (index $doubled (mul $p 2)) (index $doubled (add (mul $p 2) 1))) }}
+                      {{/* 内联 style 会被 Hugo 消毒，颜色值必须过 safeCSS */}}
+                      <div class="tags-group-icon" style="background:{{ .color | safeCSS }};">
+                        {{/* data: URI 会被 Go 模板的 URL 过滤器替成 #ZgotmplZ，仅对 data: 前缀开 safeURL 口子 */}}
+                        <img src="{{ if hasPrefix .icon "data:" }}{{ .icon | safeURL }}{{ else if hasPrefix .icon "http" }}{{ .icon }}{{ else }}{{ .icon | relURL }}{{ end }}"
+                          alt="{{ .name }}" title="{{ .name }}">
+                      </div>
+                    {{ end }}
+                  </div>
+                {{ end }}
+              </div>
+            </div>
+          {{ end }}
+          <a id="random-hover" href="javascript:void(0);" onclick="toRandomPost()">
+            <i class="anzhiyufont anzhiyu-icon-paper-plane"></i>
+            <div class="bannerText">{{ $homeTop.random_btn_text | default "随便逛逛" }}
+              <i class="anzhiyufont anzhiyu-icon-arrow-right"></i>
+            </div>
+          </a>
+        </div>
+        <div class="categoryGroup">
+          {{ range $homeTop.category }}
+            {{/* 原版内联 box-shadow 会被 Hugo 消毒成 ZgotmplZ，改由 CSS 按 .blue/.red/.green 类提供阴影 */}}
+            <div class="categoryItem {{ .class }}">
+              <a class="categoryButton {{ .class }}" href="{{ .path | relURL }}">
+                <span class="categoryButtonText">{{ .name }}</span>
+                <i class="anzhiyufont {{ .icon }}"></i>
+              </a>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+      {{ if $homeTop.top_group }}
+        {{ $postsOnly := where site.RegularPages "Type" "posts" }}
+        {{ $topGroup := where $postsOnly "Params.topGroup" true }}
+        {{ if not $topGroup }}{{ $topGroup = first 6 $postsOnly }}{{ end }}
+        <div class="topGroup">
+          {{ range first 6 $topGroup }}
+            <div class="recent-post-item" onclick="location.href='{{ .RelPermalink }}'">
+              <div class="post_cover left_radius">
+                <a href="{{ .RelPermalink }}" title="{{ .Title }}">
+                  <span class="recent-post-top-text">荐</span>
+                  <img class="post_bg" alt="{{ .Title }}" loading="lazy"
+                    src="{{ .Params.cover | default "/img/default_cover.jpg" }}"
+                    onerror="this.onerror=null;this.src='/img/404.jpg'">
+                </a>
+              </div>
+              <div class="recent-post-info">
+                <a class="article-title" href="{{ .RelPermalink }}" title="{{ .Title }}">{{ .Title }}</a>
+              </div>
+            </div>
+          {{ end }}
+          {{ with $homeTop.banner }}
+            {{/* 官方规则（HomeTop.tsx shouldLoadLottie）：banner.image 为空 → 显示 hello 动画背景；配了图 → 显示封面图 */}}
+            {{ $hasCover := trim (.image | default "") " " }}
+            <a id="todayCard" class="todayCard{{ if not $hasCover }} has-lottie{{ end }}" href="{{ .link | relURL }}" style="z-index: 1;">
+              <div class="todayCard-info">
+                <div class="todayCard-tips">{{ .tips }}</div>
+                <div class="todayCard-title">{{ .title }}</div>
+              </div>
+              {{ if $hasCover }}
+                <img class="todayCard-cover" src="{{ .image | relURL }}" alt="封面">
+              {{ else }}
+                {{/* 官方 Next 版 HelloLottie：lottie-web 渲染 public/static/hello.lottie。
+                   这里离线转成了终帧 SVG（assets/img/hello-lottie.svg），路径/17 段彩虹渐变/两级 matrix
+                   均取自官方渲染结果，书写动画由 CSS stroke-dashoffset 复现，不引入 lottie-web。 */}}
+                <div class="hello-lottie">
+                  {{ with resources.Get "img/hello-lottie.svg" }}{{ .Content | safeHTML }}{{ end }}
+                </div>
+              {{ end }}
+              <div class="banner-button-group">
+                <div class="banner-button" onclick="event.stopPropagation();event.preventDefault();hideTodayCard();">
+                  <i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i>
+                  <span class="banner-button-text">更多推荐</span>
+                </div>
+              </div>
+            </a>
+          {{ end }}
+        </div>
+      {{ end }}
+    </div>
+  </div>
+{{ end }}

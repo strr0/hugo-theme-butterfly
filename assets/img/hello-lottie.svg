@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet" class="hello-svg" aria-hidden="true">
+  <defs>
+    <clipPath id="helloClip"><rect width="500" height="500" x="0" y="0"></rect></clipPath>
+    <linearGradient id="helloGradient" spreadMethod="pad" gradientUnits="userSpaceOnUse" x1="-135" y1="19" x2="134.5" y2="-3">
+      <stop offset="0%" stop-color="rgb(0,145,150)"></stop>
+      <stop offset="5%" stop-color="rgb(47,157,173)"></stop>
+      <stop offset="11%" stop-color="rgb(94,169,197)"></stop>
+      <stop offset="17%" stop-color="rgb(142,205,130)"></stop>
+      <stop offset="23%" stop-color="rgb(189,241,63)"></stop>
+      <stop offset="30%" stop-color="rgb(222,227,40)"></stop>
+      <stop offset="37%" stop-color="rgb(255,213,16)"></stop>
+      <stop offset="42%" stop-color="rgb(255,197,28)"></stop>
+      <stop offset="48%" stop-color="rgb(255,182,40)"></stop>
+      <stop offset="54%" stop-color="rgb(255,136,37)"></stop>
+      <stop offset="61%" stop-color="rgb(255,91,34)"></stop>
+      <stop offset="67%" stop-color="rgb(255,68,129)"></stop>
+      <stop offset="74%" stop-color="rgb(255,45,223)"></stop>
+      <stop offset="81%" stop-color="rgb(164,115,233)"></stop>
+      <stop offset="88%" stop-color="rgb(73,185,243)"></stop>
+      <stop offset="94%" stop-color="rgb(57,189,247)"></stop>
+      <stop offset="100%" stop-color="rgb(40,193,250)"></stop>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#helloClip)">
+    <g transform="matrix(1.6770009994506836,0,0,1.6770009994506836,-168.750244140625,-165.7444610595703)">
+      <g transform="matrix(1,0,0,1,252,245.91799926757812)">
+        <path class="hello-stroke" pathLength="1" fill="none" stroke="url(#helloGradient)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"
+          d="M-145.66,43.747 C-145.66,43.747 -86.107,10.264 -81.851,-26.162 C-79.424,-46.943 -98.573,-44.137 -101.426,-23.013 C-103.757,-5.755 -109.596,40.561 -109.596,40.561 C-109.596,40.561 -103.979,-0.034 -85.851,1.753 C-65.936,4.083 -91.978,40.05 -68.999,40.305 C-48.572,40.532 -27.639,22.688 -26.873,10.943 C-25.99,-2.599 -44.362,-4.886 -50.022,11.966 C-55.226,27.461 -43.584,44.902 -23.54,40.581 C7.341,33.922 22.483,-10.827 23.936,-26.077 C25.467,-42.162 13.723,-43.694 6.574,-29.397 C-0.104,-16.04 -11.245,37.085 12.958,41.583 C41.809,46.944 64.277,-5.906 67.086,-23.779 C69.802,-41.066 58.656,-45.952 50.234,-30.673 C41.166,-14.223 27.843,44.077 59.937,41.326 C86.746,39.028 76.916,2.264 102.898,-0.05 C114.562,-1.088 119.386,9.92 118.532,21.029 C117.638,32.646 106.66,42.475 95.809,40.943 C85.898,39.544 80.838,25.973 83.425,17.072 C86.617,6.094 96.662,0.12 102.898,-0.05 C111.766,-0.29 116.234,5.327 124.149,5.199 C131.179,5.086 136.66,-1.311 136.66,-1.311"></path>
+      </g>
+    </g>
+  </g>
+</svg>

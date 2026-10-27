@@ -1,0 +1,105 @@
+{{ define "main" }}
+  {{/* 文章主体：对照原版 post.pug + post-copyright.pug 移植（去评论/分享/广告/第三方统计） */}}
+  <div id="post">
+    <article id="article-container" class="post-content">
+      <header>
+        {{ $pm := site.Params.post_meta | default dict }}
+        {{ if and $pm.categories .Params.categories }}
+          {{ range .Params.categories }}
+            <a class="post-meta-categories" href="{{ "/categories/" | relURL }}{{ . | urlize }}/">{{ . }}</a>
+          {{ end }}
+        {{ end }}
+        {{ if and $pm.tags .Params.tags }}
+          {{ range .Params.tags }}
+            <a class="post-tag-link" href="{{ "/tags/" | relURL }}{{ . | urlize }}/" tabindex="-1">{{ . }}</a>
+          {{ end }}
+        {{ end }}
+        <h1 id="CrawlerTitle">{{ .Title }}</h1>
+        <span class="post-crawler-author">{{ site.Params.author | default site.Title }}</span>
+        {{ if $pm.date_type }}
+          {{ if eq $pm.date_type "updated" }}
+            <time datetime="{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" }}">{{ .Lastmod.Format "2006-01-02" }}</time>
+          {{ else }}
+            <time datetime="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">{{ .Date.Format "2006-01-02" }}</time>
+          {{ end }}
+        {{ end }}
+      </header>
+      {{ .Content }}
+    </article>
+
+    {{ $pc := site.Params.post_copyright | default dict }}
+    {{ if $pc.enable }}
+      {{ $license := $pc.license | default "CC BY 4.0" }}
+      {{ $licenseUrl := $pc.license_url | default "https://creativecommons.org/licenses/by/4.0/" }}
+      {{ $avatar := site.Params.avatar | default "" }}
+      <div class="post-copyright">
+        <div class="copyright-cc-box">
+          <i class="anzhiyufont anzhiyu-icon-copyright"></i>
+        </div>
+        <div class="post-copyright__author_box">
+          <a class="post-copyright__author_img" href="{{ "/" | relURL }}" title="头像">
+            <img class="post-copyright__author_img_back" src="{{ $avatar }}" alt="头像">
+            <img class="post-copyright__author_img_front" src="{{ $avatar }}" alt="头像">
+          </a>
+          <div class="post-copyright__author_name">{{ site.Params.author | default site.Title }}</div>
+          <div class="post-copyright__author_desc">{{ site.Params.subtitle }}</div>
+        </div>
+        <div class="post-copyright__post__info">
+          <a class="post-copyright__original" href="{{ .RelPermalink }}" title="该文章为原创文章，注意版权协议">原创</a>
+          <a class="post-copyright-title" href="{{ .RelPermalink }}"><span>{{ .Title }}</span></a>
+        </div>
+        <div class="post-copyright__notice">
+          <span class="post-copyright-info">{{ safeHTML (printf "本博客所有文章除特别声明外，均采用 <a href=\"%s\" target=\"_blank\" rel=\"noopener external nofollow\">%s</a> 许可协议。转载请注明来自 <a href=\"%s\" target=\"_blank\">%s</a>！" $licenseUrl $license site.BaseURL site.Title) }}</span>
+        </div>
+      </div>
+    {{ end }}
+
+    <div class="post-tools-right">
+      <div class="tag_share">
+        <div class="post-meta__box">
+          {{ if and $pm.categories .Params.categories }}
+            <div class="post-meta__box__category-list">
+              {{ range .Params.categories }}
+                {{ $count := len (where (where site.RegularPages "Type" "posts") "Params.categories" "intersect" (slice .)) }}
+                <a class="post-meta__box__categoryes" href="{{ "/categories/" | relURL }}{{ . | urlize }}/"><span class="categoryes-punctuation"><i class="anzhiyufont anzhiyu-icon-inbox"></i></span>{{ . }}<span class="categoryesPageCount">{{ $count }}</span></a>
+              {{ end }}
+            </div>
+          {{ end }}
+          {{ if and $pm.tags .Params.tags }}
+            <div class="post-meta__box__tag-list">
+              {{ range .Params.tags }}
+                {{ $count := len (where (where site.RegularPages "Type" "posts") "Params.tags" "intersect" (slice .)) }}
+                <a class="post-meta__box__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/"><span class="tags-punctuation"><i class="anzhiyufont anzhiyu-icon-tag"></i></span>{{ . }}<span class="tagsPageCount">{{ $count }}</span></a>
+              {{ end }}
+            </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+
+    {{/* 相关文章：对照原版 related_post.js（按共同标签加权，取前 6） */}}
+    {{ if and .Params.tags }}
+      {{ $rel := (where site.RegularPages "Type" "posts").Related . }}
+      {{ $related := first 6 (where $rel "Permalink" "!=" .Permalink) }}
+      {{ with $related }}
+        <div class="relatedPosts">
+          <div class="headline"><i class="anzhiyufont anzhiyu-icon-thumbs-up"></i><span>喜欢这篇文章的人也看了</span></div>
+          <div class="relatedPosts-list">
+            {{ range . }}
+              {{ $cover := .Params.cover | default .Params.top_img | default "" }}
+              <div>
+                <a href="{{ .RelPermalink }}" title="{{ .Title }}">
+                  {{ with $cover }}<img class="cover" src="{{ . }}" alt="cover">{{ end }}
+                  <div class="content is-center">
+                    <div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> {{ .Date.Format "2006-01-02" }}</div>
+                    <div class="title">{{ .Title }}</div>
+                  </div>
+                </a>
+              </div>
+            {{ end }}
+          </div>
+        </div>
+      {{ end }}
+    {{ end }}
+  </div>
+{{ end }}

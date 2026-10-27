@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.Language.Locale | default "zh-CN" }}" data-theme="light">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body data-type="butterfly">
+  <div id="web_bg"></div>
+  {{ $pageType := "page" }}
+  {{ if .IsHome }}{{ $pageType = "home" }}{{ else if eq .Section "posts" }}{{ $pageType = "post" }}{{ end }}
+  <div id="body-wrap" class="{{ $pageType }}">
+    {{ partial "header.html" . }}
+    <main id="blog-container">
+      {{/* 官方首页顺序：EssayBar 说说条 → home_top 顶部卡片区 → 分类条 + 文章流 */}}
+      {{ if .IsHome }}{{ partial "essay_bar.html" . }}{{ partial "home_top.html" . }}{{ end }}
+      {{/* 分类/标签总览页照官方 /categories/ /tags/：整页只有胶囊云，不渲染侧边栏 */}}
+      {{ $hideAside := and (eq .Kind "taxonomy") (or (eq .Data.Plural "categories") (eq .Data.Plural "tags")) }}
+      <div id="content-inner" class="layout{{ if $hideAside }} hide-aside{{ end }}">
+        {{ block "main" . }}{{ end }}
+        {{ if not $hideAside }}{{ partial "aside.html" . }}{{ end }}
+      </div>
+    </main>
+    <footer id="footer">
+      {{ partial "footer.html" . }}
+    </footer>
+    {{ partial "rightside.html" . }}
+    {{ if site.Params.search.enable }}{{ partial "search.html" . }}{{ end }}
+  </div>
+  {{ $js := resources.Get "js/butterfly.js" | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" defer></script>
+  {{ if site.Params.search.enable }}
+  {{ $lsCfg := dict "path" ("search.json" | relURL) "preload" (site.Params.search.preload | default true) "root" site.BaseURL }}
+  <script>window.localSearchConfig = {{ $lsCfg | jsonify | safeJS }};</script>
+  {{ $searchJs := resources.Get "js/local-search.js" | minify | fingerprint }}
+  <script src="{{ $searchJs.RelPermalink }}" defer></script>
+  {{ end }}
+</body>
+</html>

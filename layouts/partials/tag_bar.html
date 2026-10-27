@@ -1,0 +1,10 @@
+{{/* 标签 term 页顶部的标签胶囊条——照官方预览站 blog.anheyu.com /tags/xxx 的 TagBar 模块：
+     卡片容器可换行，# + 标签名 + 文章数小徽标，当前标签 .selected 高亮；按文章数降序（与 /tags/ 总览页一致） */}}
+<div class="tag-bar-container">
+  {{ $cur := .Title }}
+  {{ range site.Taxonomies.tags.ByCount }}
+    <a class="tag-bar-item{{ if eq .Page.Title $cur }} selected{{ end }}" href="{{ .Page.RelPermalink }}" title="{{ .Page.Title }}">
+      <span class="tag-bar-punctuation">#</span><span class="tag-bar-name">{{ .Page.Title }}</span><span class="tag-bar-count">{{ .Count }}</span>
+    </a>
+  {{ end }}
+</div>

@@ -1,0 +1,24 @@
+{{/* 首页「即刻」说说条——照官方预览站 blog.anheyu.com 首页 EssayBar 模块 + 原版 layout/includes/bbTimeList.pug。
+     数据源：站点根目录 data/essay.yml 的 list（原版 site.data.essay）；没有数据时整条不渲染（与原版 if site.data.essay 一致）。
+     跳转链接取 site.Params.essay.link（原版固定 /essay/），未配置则不渲染成链接。 */}}
+{{ $cfg := site.Params.essay | default dict }}
+{{ $essay := hugo.Data.essay | default dict }}
+{{ $list := $essay.list | default (slice) }}
+{{ if and $cfg.enable $list }}
+  {{ $link := $cfg.link | default "" }}
+  <div class="essay-bar-wrapper">
+    {{ if $link }}<a class="essay-logo" href="{{ $link | relURL }}"{{ else }}<span class="essay-logo"{{ end }} title="即刻短文">
+      <i class="anzhiyufont anzhiyu-icon-jike"></i>
+    {{ if $link }}</a>{{ else }}</span>{{ end }}
+    {{ if $link }}<a class="essay-carousel-link" href="{{ $link | relURL }}">{{ end }}
+      <div class="essay-carousel-wrapper">
+        <div class="essay-carousel" id="essay-carousel">
+          {{ range $list }}<div class="essay-item">{{ .text }}</div>{{ end }}
+        </div>
+      </div>
+    {{ if $link }}</a>{{ end }}
+    {{ if $link }}<a class="essay-more-btn" href="{{ $link | relURL }}"{{ else }}<span class="essay-more-btn"{{ end }} title="查看全文">
+      <i class="anzhiyufont anzhiyu-icon-arrow-circle-right"></i>
+    {{ if $link }}</a>{{ else }}</span>{{ end }}
+  </div>
+{{ end }}

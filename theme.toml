@@ -1,0 +1,9 @@
+name = "Butterfly"
+license = "GPL-3.0"
+licenselink = "https://github.com/strr0/hugo-theme-butterfly/blob/main/LICENSE"
+description = "Butterfly 主题"
+homepage = "https://github.com/strr0/hugo-theme-butterfly"
+min_version = "0.120.0"
+
+[author]
+  name = "strr0"

@@ -1,0 +1,16 @@
+{{- /* 本地搜索索引：对应原版 hexo-generator-searchdb 的 search.xml，供 /search.json 使用 */ -}}
+{{- $ser := slice -}}
+{{- range site.RegularPages -}}
+  {{- $tagNames := slice -}}
+  {{- range $t := .GetTerms "tags" -}}
+    {{- $tagNames = $tagNames | append (dict "label" $t.LinkTitle "url" $t.RelPermalink) -}}
+  {{- end -}}
+  {{- $ser = $ser | append (dict
+        "title" .Title
+        "url" .RelPermalink
+        "content" .Plain
+        "tags" $tagNames
+        "cover" (.Params.cover | default "")
+      ) -}}
+{{- end -}}
+{{- $ser | jsonify | safeHTML -}}

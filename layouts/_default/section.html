@@ -1,0 +1,39 @@
+{{ define "main" }}
+  {{/* 全部文章页（导航「文章」→ /posts/）：结构照原版 layout/archive.pug + mixins/article-sort.pug，
+       观感照官方预览站 blog.anheyu.com /archives 的 ArchiveList 模块（按年分组、年份带主色竖条、封面 151×80、日期官方不显示） */}}
+  <div class="archive-page">
+    {{/* 总数只算 posts，site.RegularPages 会把 about.md 这类非 section 页也算进去 */}}
+    <div class="article-sort-title">文章<sup>{{ len (where site.RegularPages "Type" "posts") }}</sup></div>
+    <div class="article-sort">
+      {{ range $group := .Paginator.Pages.GroupByDate "2006" }}
+        <div class="article-sort-group">
+          <div class="article-sort-item year">{{ $group.Key }}</div>
+          {{ range $p := $group.Pages }}
+            {{ $cover := $p.Params.cover | default "" }}
+            <a class="article-sort-item{{ if not $cover }} no-article-cover{{ end }}" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}">
+              {{ if $cover }}
+                <div class="article-sort-item-img">
+                  <img loading="lazy" alt="{{ $p.Title }}" src="{{ $cover }}" onerror="this.onerror=null;this.src='/img/404.jpg'">
+                </div>
+              {{ end }}
+              <div class="article-sort-item-info">
+                {{/* 官方 .articleSortItemTime{display:none}：结构保留，视觉不展示 */}}
+                <div class="article-sort-item-time">
+                  <i class="anzhiyufont anzhiyu-icon-calendar-alt"></i>
+                  <time datetime="{{ $p.Date.Format "2006-01-02" }}" title="创建于 {{ $p.Date.Format "2006-01-02 15:04:05" }}">{{ $p.Date.Format "01-02" }}</time>
+                </div>
+                <div class="article-sort-item-title">{{ $p.Title }}</div>
+                <div class="article-sort-item-tags">
+                  {{ range $p.Params.tags }}
+                    <span class="article-meta-tags"><span class="tags-punctuation"><i class="anzhiyufont anzhiyu-icon-hashtag"></i></span>{{ . }}</span>
+                  {{ end }}
+                </div>
+              </div>
+            </a>
+          {{ end }}
+        </div>
+      {{ end }}
+    </div>
+    {{ partial "pagination.html" . }}
+  </div>
+{{ end }}

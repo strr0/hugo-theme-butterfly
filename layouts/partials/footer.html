@@ -1,0 +1,50 @@
+<div id="footer-wrap">
+  {{ with site.Params.social }}
+    <div id="footer_deal">
+      {{ $icons := site.Params.social_icons | default dict }}
+      {{ $half := div (len $icons) 2 }}
+      {{ $i := 0 }}
+      {{ range $name, $link := . }}
+        {{ if lt $i $half }}
+          <a class="deal_link" href="{{ $link }}" title="{{ $name }}" target="_blank" rel="noopener">
+            <i class="anzhiyufont {{ index $icons $name | default "anzhiyu-icon-link" }}"></i>
+          </a>
+        {{ end }}
+        {{ $i = add $i 1 }}
+      {{ end }}
+      <img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="scrollToTop()" src="{{ site.Params.avatar }}" size="50px">
+      {{ $i = 0 }}
+      {{ range $name, $link := . }}
+        {{ if ge $i $half }}
+          <a class="deal_link" href="{{ $link }}" title="{{ $name }}" target="_blank" rel="noopener">
+            <i class="anzhiyufont {{ index $icons $name | default "anzhiyu-icon-link" }}"></i>
+          </a>
+        {{ end }}
+        {{ $i = add $i 1 }}
+      {{ end }}
+    </div>
+  {{ end }}
+  {{ with site.Params.footer.custom_text }}
+    <div class="footer_custom_text">{{ . | safeHTML }}</div>
+  {{ end }}
+</div>
+<div id="footer-bar">
+  <div class="footer-bar-links">
+    <div class="footer-bar-left">
+      <div id="footer-bar-tips">
+        {{ $since := site.Params.footer.owner.since }}
+        {{ $year := now.Format "2006" }}
+        <span class="copyright">&copy;{{ if and $since (ne (string $since) $year) }}{{ $since }} - {{ end }}{{ $year }} By
+          <a class="footer-bar-link" href="{{ "/" | relURL }}" title="{{ site.Params.author | default site.Title }}">{{ site.Params.author | default site.Title }}</a>
+        </span>
+      </div>
+      <span id="footer-type-tips">=&gt; ️ ️已挑选{{ len (where site.RegularPages "Type" "posts") }}篇文章呈上，可供品读</span>
+    </div>
+    <div class="footer-bar-right">
+      {{ range site.Params.footer.linkList }}
+        <a class="footer-bar-link" href="{{ .link | relURL }}" title="{{ .text }}">{{ .text }}</a>
+      {{ end }}
+      <a class="footer-bar-link" href="https://github.com/strr0/hugo-theme-butterfly" target="_blank" rel="noopener" title="主题：Butterfly">主题 Butterfly</a>
+    </div>
+  </div>
+</div>

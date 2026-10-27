@@ -1,0 +1,17 @@
+{{/* 通用列表页主体（非分类/标签 term 的普通列表页）：标题卡 + 文章卡流 + 分页 */}}
+{{ $posts := .Paginator.Pages }}
+<div id="recent-posts" class="recent-posts">
+  <div class="recent-post-item" style="height: auto;">
+    <div class="recent-post-info no-cover">
+      <div class="recent-post-info-top" style="padding: 24px;">
+        <h1 class="article-title">{{ .Title }}</h1>
+        {{ if eq .Kind "taxonomy" }}
+          <div class="content">该分类下共 {{ len $posts }} 篇文章</div>
+        {{ else if eq .Kind "term" }}
+          <div class="content">「{{ .Title }}」下共 {{ len $posts }} 篇文章</div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+  {{ partial "post_cards.html" . }}
+</div>

@@ -185,7 +185,8 @@ img:not([src]), img[src=''] { opacity: 0; }
 #page-header.not-home-page { height: 400px; }
 #page-header.not-top-img { margin-bottom: 0; height: 60px; background: 0; }
 
-/* 静态导航栏（应用户要求）：常驻 position:fixed 置顶 + 实色背景，无任何滚动动态切换（nav-fixed/nav-visible 已废弃） */
+/* 导航栏本体常驻 position:fixed 置顶（官方 .headerWrapper）；
+   滚动只影响「中部菜单淡出 + 页面名进场」与回顶按钮显隐，导航自身不位移 */
 #page-header #nav {
   display: flex;
   justify-content: center;
@@ -195,13 +196,21 @@ img:not([src]), img[src=''] { opacity: 0; }
   left: 0;
   width: 100%;
   height: 60px;
-  padding: 0 1.5rem;
+  padding: 0;
   box-shadow: none;
   z-index: 91;
   white-space: nowrap;
-  background: var(--butterfly-card-bg);
-  outline: 1px solid var(--butterfly-card-border);
+  /* 初始（未滚动）用页面底色且无描边，与下方内容无缝（官方 .headerWrapper.isTransparent：
+     background-color: var(--background); outline-color: transparent）；滚动后才抬成卡片色 */
+  background-color: var(--butterfly-background);
+  outline: 1px solid transparent;
+  will-change: background-color, outline-color;
+  transition: background-color 0.3s, outline-color 0.3s;
   transform: translateZ(0);
+}
+#page-header.has-scroll #nav {
+  background-color: var(--butterfly-card-bg);
+  outline-color: var(--butterfly-card-border);
 }
 #page-header #nav a { color: var(--font-color); text-shadow: none; }
 #nav *::after { background-color: transparent !important; }
@@ -209,15 +218,20 @@ img:not([src]), img[src=''] { opacity: 0; }
 #page-header #nav .menus_items {
   height: 40px;
   margin: auto 0;
+  /* 官方 .menusItems{transition:transform .2s ease-out, opacity .2s ease-out}，配合 #page-header.nav-menu-scrolled 淡出 */
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 }
 
-/* 内容宽度容器：max-width 1400，内部三段定位 */
+/* 内容宽度容器：max-width 1400 **含** 24px 左右内边距（官方 .headerContent）
+   —— 早先内边距挂在 #nav 上使站名落在 x=260，与下方正文容器（284）差 24px，故改到本层 */
 #nav-group {
   max-width: 1400px;
   width: 100%;
   display: flex;
   position: relative;
   align-items: center;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
 }
 
 /* 左侧站名：hover 时 图标/标题 交叉淡入淡出 */
@@ -253,12 +267,11 @@ img:not([src]), img[src=''] { opacity: 0; }
 #page-header #nav #blog_name #site-name:hover {
   color: var(--butterfly-white) !important;
   background: var(--butterfly-main);
-  box-shadow: var(--butterfly-shadow-main);
 }
 
-/* 中部菜单：绝对定位在整个视口正中 */
+/* 中部菜单：绝对定位在 nav-group 的 padding box 正中（官方 .mainNav{left:0;width:100%}） */
 #nav #menus {
-  padding: 0 calc((100% - 1400px + 3rem) / 2);
+  padding: 0;
   display: flex;
   justify-content: center;
   width: 100%;
@@ -279,7 +292,7 @@ img:not([src]), img[src=''] { opacity: 0; }
   margin: 0;
   padding: 0;
 }
-.menus_item { position: relative; display: inline-block; }
+.menus_item { position: relative; display: inline-block; padding: 0 0.4rem; margin: auto; border-radius: 30px; }
 #nav .menus_items .menus_item > a { border-radius: 50px; }
 #nav .menus_items .menus_item > a {
   letter-spacing: 0.3rem;
@@ -294,7 +307,7 @@ img:not([src]), img[src=''] { opacity: 0; }
   justify-content: center;
   padding-bottom: 0;
   color: var(--font-color);
-  font-size: 14px;
+  font-size: 1rem;            /* 官方 .menuTitle{font-size:1rem}，旧 14px 比原版小一圈 */
   border-radius: 50px;
   transition: 0.3s;
   cursor: pointer;
@@ -302,15 +315,75 @@ img:not([src]), img[src=''] { opacity: 0; }
 #nav .site-page i { font-size: 1em; margin-right: 2px; line-height: 1; }
 #nav .menus_items .menus_item > a > i:last-child { display: none; }
 
-/* 菜单 hover：实心胶囊 + 主色阴影 */
+/* 菜单 hover：实心胶囊（官方 .menusItem:hover .menuTitle 只有 background+color，无阴影） */
 @media screen and (min-width: 768px) {
   .menus_item:hover > a.site-page {
     color: var(--butterfly-white) !important;
     background: var(--butterfly-main);
-    box-shadow: var(--butterfly-shadow-main);
     transition: 0.3s;
   }
 }
+/* 官方桌面菜单（文库/友链/我的/关于）是纯文字大字距，图标只出现在移动端抽屉 */
+@media screen and (min-width: 769px) {
+  #nav .menus_items .menus_item > a.site-page i { display: none; }
+}
+
+/* 页面名进场（官方 .pageNameMask / .pageNameContainer / .pageName）：
+   平时藏在 header 下方（top 62 + translateY 10），向下滚动时上移 52px 回到 60px 高的导航正中 */
+#page-name-mask {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+#page-name-container {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  height: 40px;
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateX(-50%) translateY(10px) translateZ(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#page-name-container .page-name {
+  position: relative;
+  display: inline;
+  padding: 4px 8px;
+  overflow: hidden;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--font-color);
+  transition: color 0.3s;
+}
+#page-name-container:hover .page-name { color: var(--butterfly-main); }
+/* 向下滚动超过 60px（官方 isScrolled）：菜单上移淡出、页面名进场；向上滚动则反向复原 */
+#page-header.nav-menu-scrolled #nav #menus .menus_items {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50px) scale(1.1);
+}
+#page-header.nav-menu-scrolled #page-name-container {
+  z-index: 1;
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-52px) translateZ(0);
+}
+
 /* 右侧按钮组 */
 #nav-right {
   z-index: 102;
@@ -320,6 +393,7 @@ img:not([src]), img[src=''] { opacity: 0; }
   flex-direction: row;
   height: 100%;
   align-items: center;
+  padding-right: 1.5rem;    /* 官方 .headerRight{padding-right:1.5rem}：absolute 不受父层 padding 影响，需自己扣 */
 }
 #page-header #nav #nav-right > div { margin-left: 1rem; padding: 0; }
 #nav .nav-button a {
@@ -334,10 +408,11 @@ img:not([src]), img[src=''] { opacity: 0; }
   transition: background 0.3s ease-in-out, color 0.3s;
 }
 #nav .nav-button a i { line-height: 1; }
+/* 骰子/搜索图标：官方 .navButton svg 为 1.5rem；必须直接命中 i，否则被 iconfont 的 .anzhiyufont{font-size:16px} 截断 */
+#nav #nav-right .nav-button a i { font-size: 1.5rem; }
 #page-header #nav #nav-right .nav-button a:hover {
   color: var(--butterfly-white) !important;
   background: var(--butterfly-main);
-  box-shadow: var(--butterfly-shadow-main);
 }
 #page-header #nav #nav-right .nav-button a:hover i { color: var(--butterfly-white); }
 
@@ -351,6 +426,9 @@ img:not([src]), img[src=''] { opacity: 0; }
   justify-content: space-around;
   transition: all 0.3s ease-in-out;
 }
+/* 出现时的额外间距（官方 .navTotop.isVisible{margin-left:1.5rem}，其余按钮为 1rem）。
+   需写到四层 id 才能压过 #page-header #nav #nav-right > div 的 1rem */
+#page-header #nav #nav-right #nav-totop { margin-left: 1.5rem; }
 #page-header #nav #nav-right .nav-button a.totopbtn {
   width: 25px;
   height: 25px;
@@ -379,7 +457,7 @@ img:not([src]), img[src=''] { opacity: 0; }
   transition: 0.3s;
 }
 #nav-totop:hover #percent { opacity: 0; transform: scale(1.5); font-weight: 700; }
-/* 顶部时隐藏回顶/百分比按钮（原版 nav-fixed 显隐逻辑的保留版：挂在 has-scroll 类上，导航本体仍无任何动态效果） */
+/* 顶部时隐藏回顶/百分比按钮（官方 .navTotop 未加 isVisible 时的 width:0 + scale(0)） */
 #page-header:not(.has-scroll) #nav-totop {
   width: 0;
   transform: scale(0);
@@ -387,8 +465,9 @@ img:not([src]), img[src=''] { opacity: 0; }
   margin-left: 0 !important;
   overflow: hidden;
 }
-/* 触底时百分比按钮拉长显示“返回顶部”（原版 long 态） */
-#page-header #nav #nav-right .nav-button.long,
+/* 触底时百分比按钮拉长显示“返回顶部”（官方 .isVisible.long{width:80px;margin-left:1rem}
+   + .long .totopbtn{width:70px}；#nav-totop 即该 .nav-button 外层） */
+#page-header #nav #nav-right #nav-totop.long { width: 80px; margin-left: 1rem; }
 #page-header #nav #nav-right .nav-button.long a.totopbtn,
 #page-header #nav #nav-right .nav-button.long a.totopbtn span { width: 70px; }
 #page-header #nav #nav-right .nav-button.long a.totopbtn span {
@@ -413,12 +492,34 @@ img:not([src]), img[src=''] { opacity: 0; }
   transition: 0.3s;
 }
 
-/* 1390px 以下收窄留白（与原版一致） */
-@media screen and (max-width: 1390px) {
-  #nav { padding: 0 1.5rem; }
-  #nav #menus { padding: 0 1.5rem; }
+/* 有头图的页面在顶部时导航完全透明 + 直接元素反白（官方 .headerWrapper.isTransparent.textIsWhite
+   与 .headerWrapper.textIsWhite 那一组规则）：
+   · “有头图”用 :not(.not-top-img) 判定——full_page / not-home-page / post-bg 三种都是头图铺到导航背后
+     （官方只对文章详情 / 音乐 / 一图流页开白字，本站其余头图页同样需要反白才可读）；
+   · “在顶部”用 :not(.has-scroll)（官方 isTransparent 即 scrollY === 0），滚 1px 就整体回到卡片态；
+   · 移动端展开的抽屉 #menus.menus-show 自带卡片底色，用 :not(.menus-show) 排除，不参与反白 */
+#page-header:not(.not-top-img):not(.has-scroll) #nav { background-color: transparent; }
+
+#page-header:not(.not-top-img):not(.has-scroll) #nav #blog_name #site-name,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #blog_name #site-name .title,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #blog_name #site-name i,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #menus:not(.menus-show) .menus_item > a.site-page,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #nav-right .nav-button:not(#nav-totop) a.site-page,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #toggle-menu a {
+  color: #fff;
 }
 
+/* hover 改为半透明白底胶囊（官方 rgba(255,255,255,.2)），压掉默认的实心主色胶囊 */
+#page-header:not(.not-top-img):not(.has-scroll) #nav #blog_name #site-name:hover,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #menus:not(.menus-show) .menus_item:hover > a.site-page,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #nav-right .nav-button:not(#nav-totop) a.site-page:hover,
+#page-header:not(.not-top-img):not(.has-scroll) #nav #toggle-menu a:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 注：≤1390px 无需再给 #nav/#menus 补内边距——#nav-group 的 max-width 已含 1.5rem 内边距，
+   窄屏时 width:100% 自然收敛；早先在此补 padding 会让站名重新偏左 24px */
 /* 首屏 hero */
 #site-info {
   position: absolute;
@@ -2260,8 +2361,10 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
   #site-title { font-size: 1.85em; }
   #site-subtitle { font-size: 1.15em; }
   #site_social_icons { display: block; }
-  /* 移动端导航：去底边，背景用全局底色（导航常驻 fixed，无滚动切换） */
-  #page-header #nav { padding: 20px; border-bottom: none; background: var(--global-bg); }
+  /* 移动端导航：去底边，中部菜单改由汉堡按钮展开（背景跟基础规则走顶部/滚动两态） */
+  #page-header #nav { padding: 20px; border-bottom: none; }
+  /* 页面名进场只在桌面生效（官方 ≤992px 隐藏中部菜单后同样不显示） */
+  #page-name-mask { display: none; }
   /* 基础规则 #nav #menus (2,0,0) 压过单 id，移动端隐藏需同特异性 */
   #nav #menus { display: none; }
   #toggle-menu { display: block; }
@@ -2292,7 +2395,6 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
     font-size: 15px;
   }
   #menus.menus-show .site-page i { color: var(--butterfly-main); margin-right: 8px; }
-  #randomPost_button { display: none; }
   #recent-posts > .recent-post-item {
     flex-direction: column;
     height: auto;

@@ -3,7 +3,8 @@ license = "GPL-3.0"
 licenselink = "https://github.com/strr0/hugo-theme-butterfly/blob/main/LICENSE"
 description = "Butterfly 主题"
 homepage = "https://github.com/strr0/hugo-theme-butterfly"
-min_version = "0.120.0"
+# 下限由模板里的 hugo.Data 写法决定（Hugo v0.156.0 起 .Site.Data 被弃用）
+min_version = "0.156.0"
 
 [author]
   name = "strr0"

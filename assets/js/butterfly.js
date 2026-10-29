@@ -2,7 +2,7 @@
  * Butterfly Hugo Port 轻量脚本
  * 覆盖首页交互：滚动百分比、深色模式切换、副标题打字机、
  * 返回顶部、随机文章、移动端菜单、右下角按钮显隐、运行时间统计
- * （导航栏应用户要求常驻 fixed，无任何滚动类切换）
+ * （导航本体常驻 fixed，向下滚动只做「中部菜单淡出 + 页面名进场」与回顶按钮显隐）
  */
 
 // ---------- 深色模式 ----------
@@ -15,7 +15,7 @@ function switchTheme() {
 }
 function updateThemeIcon() {
   // 原版图标库中没有 sun，与原版一致固定使用 moon
-  document.querySelectorAll('#darkmode-button i, #toggle-mode i').forEach(function (el) {
+  document.querySelectorAll('#toggle-mode i').forEach(function (el) {
     el.className = 'anzhiyufont anzhiyu-icon-moon';
   });
 }
@@ -44,29 +44,35 @@ function throttle(fn, wait) {
   };
 }
 
+// 回顶按钮（官方 HeaderRight + scroll-store）：footer 进入视口时拉长并显示“返回顶部”，
+// 否则显示滚动百分比数字（官方 String(scrollPercent)，不带 %）；scrollableHeight>10 且 scrollY>1 才计入
 var updatePercent = function (currentTop) {
-  var total = document.documentElement.scrollHeight - window.innerHeight;
-  var percent = total > 0 ? Math.min(100, Math.round((currentTop / total) * 100)) : 0;
-  if (percent < 1) percent = 1;
   var percentEl = document.getElementById('percent');
   var totopEl = document.getElementById('nav-totop');
   if (!percentEl || !totopEl) return;
-  // 触底附近拉长显示“返回顶部”（原版 long 态）
-  if (percent > 90 && currentTop > 20) {
-    totopEl.classList.add('long');
-    percentEl.textContent = '返回顶部';
-  } else {
-    totopEl.classList.remove('long');
-    percentEl.textContent = percent + '%';
-  }
+  var total = document.documentElement.scrollHeight - window.innerHeight;
+  var percent = (total > 10 && currentTop > 1) ? Math.round((currentTop / total) * 100) : 0;
+  var footer = document.getElementById('footer');
+  var footerVisible = !!footer && (currentTop + window.innerHeight >= footer.offsetTop);
+  totopEl.classList.toggle('long', footerVisible);
+  percentEl.textContent = footerVisible ? '返回顶部' : String(percent);
 };
 
-var scrollTask = throttle(function () {
-  var currentTop = window.scrollY || document.documentElement.scrollTop;
+// 上一次滚动位置，用于判定方向（官方 _lastScrollY，每个节流周期更新一次）
+var lastTop = 0;
 
-  // 顶部隐藏百分比/回顶按钮（原版 nav-fixed 显隐行为的保留版），导航本体仍完全静态
+var scrollTask = throttle(function () {
+  var currentTop = Math.max(0, window.scrollY || document.documentElement.scrollTop);
+
   var header = document.getElementById('page-header');
-  if (header) header.classList.toggle('has-scroll', currentTop > 26);
+  if (header) {
+    // 离开顶部即显示回顶按钮（官方 showToTopButton = !isAtTop，即 scrollY > 0）
+    header.classList.toggle('has-scroll', currentTop > 0);
+    // 官方 isScrolled = scrollY > 60 且本次比上次更低（向下滚）：菜单上移淡出、页面名进场；
+    // 向上滚动则 isScrolled=false，菜单与页面名反向复原
+    header.classList.toggle('nav-menu-scrolled', currentTop > 60 && currentTop > lastTop);
+  }
+  lastTop = currentTop;
 
   updatePercent(currentTop);
 
@@ -328,3 +334,4 @@ document.addEventListener('DOMContentLoaded', function () {
   var $sayhi = document.getElementById('author-info__sayhi');
   if ($sayhi) $sayhi.textContent = getTimeState();
 });
+

@@ -16,7 +16,7 @@ banner 左下角的彩色分类胶囊、右栏三列两行的推荐卡组，以�
 
 ## 环境要求
 
-- Hugo **extended** ≥ 0.156（实际下限由模板里的 `hugo.Data` 写法决定，`theme.toml` 的 `min_version` 还写着 0.120.0）；
+- Hugo **extended** ≥ 0.156（实际下限由模板里的 `hugo.Data` 写法决定，`theme.toml` 的 `min_version` 已对齐为 `0.156.0`）；
   开发与验证环境为 0.168.0
 - 联网加载图标字体 CSS（可自建镜像后改 `params.iconfont_css`）
 - **Hugo ≥ v0.156.0 弃用了 `.Site.Data`**：模板读取站点 `data/` 目录统一写 `hugo.Data.xxx`（写 `site.Data.xxx` 同样会报
@@ -138,8 +138,8 @@ themes/butterfly/
 | `params.author` | 作者名（侧边栏作者卡、文章版权卡） |
 | `params.subtitle` / `params.description` | 副标题 / 站点描述 |
 | `params.avatar` / `params.favicon` | 头像 / 站点图标 |
-| `params.index_img` | 首页 Hero 大图，留空为无头图模式（原版默认） |
-| `params.default_top_img` | 内页默认头图 |
+| `params.index_img` | 首页 Hero 大图，留空为无头图模式（原版默认）；非空时导航走「透明 + 反白」态，见「导航滚动动效」 |
+| `params.default_top_img` | 内页默认头图（文章页回退链的最后一环），同样触发导航的反白态 |
 | `params.iconfont_css` | 远程图标字体 CSS 地址 |
 | `params.site_start_time` | 建站时间（`2006-01-02`），侧栏「运行天数」与站点信息卡据此计算；**必须写在 `[params]` 下**，站点配置顶层的同名键模板读不到 |
 | `pagination.pagerSize` | 每页文章数，建议偶数 |
@@ -238,17 +238,49 @@ list:
 
 ```toml
 [[menu.main]]
-  name = "首页"
-  url = "/"
-  weight = 1
+  name = "文章"
+  url = "/posts/"
+  weight = 2
   [menu.main.params]
-    icon = "anzhiyu-icon-house-chimney"
+    icon = "anzhiyu-icon-box-archive"
 ```
 
-`weight` 控制顺序，`params.icon` 为图标字体类名。
+`weight` 控制顺序，`params.icon` 为图标字体类名（只写 `anzhiyu-icon-*` 那一段，模板会补上 `anzhiyufont`）。
 
-菜单列表末尾还会固定追加一个「随机文章」入口（`#randomPost_button`，文案与图标写死为「文章」/ `anzhiyu-icon-dice`，
-点击调 `toRandomPost()`），它**不参与** `menu.main` 配置，故导航会比菜单项多出一个。
+- **桌面端菜单是纯文字**（官方 `.menuTitle{font-size:1rem; letter-spacing:.3rem}`），`params.icon` 只在
+  ≤768px 的汉堡抽屉里出现——DOM 里照常渲染 `<i>`，由 `@media (min-width:769px)` 隐藏，改菜单时两边都会跟着变。
+- 顶部**不配「首页」菜单项**（左侧站名就是回首页入口），当前为「文章 / 分类 / 标签 / 关于」；
+  官方示例站顶部只放「文库 / 友链 / 我的 / 关于」，具体条目属于站点 `[menu.main]` 的内容配置，不是主题差异。
+- 随机文章入口**不在菜单里**：它固定在右侧 `#nav-right #random-post-button`（`anzhiyu-icon-dice`，
+  调 `toRandomPost()`，`accesskey="r"`），与官方右侧按钮顺序「骰子 → 搜索 → 回顶」一致。
+- 导航里**没有深浅色切换按钮**：月亮在右下角 `#rightside #toggle-mode`（官方把主题切换放在中控台，导航内也没有）。
+
+### 导航滚动动效
+
+导航本体常驻 `position:fixed`，不做整体隐藏 / 位移；向下滚动只做中部菜单与页面名的替换：
+
+| 状态类 | 触发条件（照官方 `src/store/scroll-store.ts`） | 表现 |
+| --- | --- | --- |
+| `has-scroll` | `scrollY > 0` | 导航背景由页面底色抬成卡片色并显出描边（见下）；右侧回顶 / 百分比按钮从 `width:0 + scale(0)` 展开 |
+| `nav-menu-scrolled` | `scrollY > 60` **且本次比上次更低** | `.menus_items` 上移淡出（`translateY(-50px) scale(1.1)`），`#page-name-container` 从导航下方 `top:62` 上移 52px，落到 60px 高的导航正中 |
+
+向上滚动时方向判定为假，菜单与页面名反向复原。页面名由 `partials/header.html` 的 `$pageTitle` 渲染：首页取
+`site.Title` + `params.subtitle`，分类 / 标签 term 页固定为「分类」/「标签」，其余页面取 `.Title`。
+百分比文本与官方一致为**纯数字**（不拼 `%`），页脚进入视口后换成「返回顶部」并把按钮拉长到 80px。
+
+导航背景与文字颜色共**三态**（官方 `.headerWrapper` / `.isTransparent` / `.isTransparent.textIsWhite`）：
+
+| 场景 | 条件 | 表现 |
+| --- | --- | --- |
+| 无头图页顶部 | `#page-header.not-top-img` 且无 `has-scroll` | 底色用页面底色 `--butterfly-background`、`outline-color: transparent`，与下方内容无缝 |
+| 有头图页顶部 | `#page-header:not(.not-top-img)` 且无 `has-scroll` | 导航**完全透明**，站名 / 菜单 / 右侧图标 / 汉堡按钮**反白**，hover 为半透明白底胶囊 `rgba(255,255,255,.2)`（而非默认的实心主色胶囊） |
+| 已滚动 | `has-scroll` | 换成 `--butterfly-card-bg` + `--butterfly-card-border` 描边，文字回普通色 |
+
+“有头图”即 `#page-header` 带 `full_page`（首页 `index_img`）/ `not-home-page`（内页 `top_img` 或
+`default_top_img`）/ `post-bg`（文章页）三种 class 之一，CSS 直接用 `:not(.not-top-img)` 判定。官方只对
+文章详情 / 音乐 / 一图流页开白字，本站其余头图页同样是头图铺到导航背后，不反白就读不了，因此放宽到“有头图”统一判定。
+“在顶部”用 `:not(.has-scroll)`（官方 `isTransparent` 即 `scrollY === 0`），滚 1px 就整体回到卡片态；两态过渡 0.3s。
+移动端展开的抽屉 `#menus.menus-show` 自带卡片底色，用 `:not(.menus-show)` 排除，不参与反白。
 
 ## 文章 Front Matter
 
@@ -284,7 +316,8 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 
 | 区域 | 官方规格 | 说明 |
 | --- | --- | --- |
-| 容器 | `max-width:1400px; padding:0 1.5rem` | `#home_top`、`#content-inner.layout` 同宽 |
+| 容器 | `max-width:1400px; padding:0 1.5rem` | `#home_top`、`#content-inner.layout` 同宽；**导航也一样**：padding 挂在 `#nav-group` 上（不是 `#nav`），`#nav-right` 因绝对定位需自带 `padding-right:1.5rem` |
+| 顶部导航 | 60px 高，1920 视口下内容盒 271–1623 | 实测墨迹：站名 x=291、菜单 775–1137（中心 956）、右侧图标末端 1629；官方对应 297 / 816–1095（中心 955）/ 1635，差值均为字形内边距。顶部态导航底色实测 (247,249,254) = `--butterfly-background`，滚动后 (255,255,255) + y=60 处 (227,232,247) 描边 |
 | 「即刻」说说条 | y 60–109，`margin:0 auto` | 与页面无额外上边距 |
 | HomeTop 整体 | y 118–457（高 340），`gap:.5rem` | `.swiper_container_card{margin:.5rem auto 0}` |
 | 左右两栏 | 各 672px（284–955 / 964–1635），栏间距 8px | 两边都是 `flex:1; min-width:0; height:340px`，**不是** Hexo 的「左 `calc(100% - 600px)` / 右固定 600px」 |
@@ -306,7 +339,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 | 模块 | 本移植版 | Hexo 原版（`hexo-theme-anzhiyu`） | 官方 Next 版（`anheyu-app-frontend`） |
 |---|---|---|---|
 | 全局骨架 | `layouts/baseof.html` | `layout/includes/layout.pug` | `src/app/layout.tsx` |
-| 顶部导航 | `partials/header.html` | `layout/includes/header/{index,nav,menu_item,social}.pug` | `src/components/layout/Header/` |
+| 顶部导航 | `partials/header.html` | `layout/includes/header/{index,nav,menu_item,social}.pug` | `src/components/layout/Header/`、滚动状态在 `src/store/scroll-store.ts` |
 | 文章页 banner 信息卡 | `partials/header.html`（`$isPost` 分支） | `layout/includes/header/post-info.pug` | `src/components/post/**` |
 | 「即刻」说说条 | `partials/essay_bar.html` | `layout/includes/bbTimeList.pug` | `src/components/home/HomeTop/`（`EssayBar.module.css`） |
 | 首页顶部卡片区 | `partials/home_top.html` | `layout/includes/categoryGroup.pug`、`source/css/_layout/home_top.styl` | `src/components/home/HomeTop/{HomeTop.tsx,HomeTop.module.css}`、`HelloLottie.tsx`（**几何真值**） |
@@ -332,11 +365,20 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
   从官方搬过来的「内容撑高」规则需显式收紧行高，否则会被 flex 收缩连带影响兄弟元素。
 - **图标**：远程 iconfont 的 CDN 自带 `.anzhiyufont{font-size:16px}`，会截断字号继承——要放大图标必须用
   高于该选择器的规则**直接命中 `i` 元素**，只改父级字号无效。
+- **内联 `style` 属性里的 CSS 必须过 `safeCSS`**：Go 的 html/template 会对 `style="..."` 插入值跑 CSS  sanitizer，
+  `background: url('/x.jpg') top / cover no-repeat fixed;` 这种简写会被判为不安全而整条替成 `style="ZgotmplZ"`（头图
+  静默不渲染，构建不报错），模板里写 `style="{{ . | safeCSS }}"`。
 - **布局校验**：改首页几何后，用 headless Edge 对本地站与官方站各出一张 1920×1080 截图，再做像素扫描比对
   （非底色扫描取整卡 bbox，`#e3e8f7` 描边扫描取 1px 精度边界），具体实测值见「首页尺寸对齐基准」。
   测 hover 态（如「随便逛逛」浮层）时 headless 无法真实悬停，需临时放一个同源 iframe 探针页注入 inline style，
   且**必须先 `transition = 'none'`**——`--virtual-time-budget` 不推进 CSS 过渡的动画时钟，否则量到的仍是过渡起始值。
   探针页属临时取证产物，用完即删。
+  测滚动态（如 `nav-menu-scrolled`）时用 `document.scrollingElement.scrollTop = 600` +
+  `dispatchEvent(new Event('scroll'))` 驱动（headless 虚拟时间下 `window.scrollTo()` 不生效），再读
+  `getComputedStyle` 与 `getBoundingClientRect()`。另注意图标字体由远程 CDN 加载，`--virtual-time-budget`
+  给小了会拍到「布局已在、墨迹为 0」的假象，不能当成样式 bug。验证导航反白态需要一个能真的加载下来的头图：
+  文章页封面是远程图床，headless 下常拿不到，可临时把 `params.default_top_img` 指向主题自带的
+  `static/img/404.jpg`（内页即变成 `not-home-page` 头图页），取证完再改回空串。
 - **Hugo 模板**：读 `data/` 目录统一用 `hugo.Data`（见「环境要求」）；`_default/taxonomy.html` 内按 `.Kind` +
   `.Data.Plural` 分四个分支，改前先确认自己命中的是哪一类页面。
 

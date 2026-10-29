@@ -1,4 +1,5 @@
-{{- /* 本地搜索索引：对应原版 hexo-generator-searchdb 的 search.xml，供 /search.json 使用 */ -}}
+{{- /* 本地搜索索引：对应原版 hexo-generator-searchdb 的 search.xml，供 /search.json 使用。
+       date / type / cover 是官方 SearchModal 结果卡（作者·日期·类型徽章·封面）需要的字段 */ -}}
 {{- $ser := slice -}}
 {{- range site.RegularPages -}}
   {{- $tagNames := slice -}}
@@ -10,7 +11,9 @@
         "url" .RelPermalink
         "content" .Plain
         "tags" $tagNames
-        "cover" (.Params.cover | default "")
+        "cover" (.Params.cover | default "/img/default_cover.jpg")
+        "date" (.Date.Format "2006-01-02")
+        "type" (cond (eq .Section "posts") "文章" "页面")
       ) -}}
 {{- end -}}
 {{- $ser | jsonify | safeHTML -}}

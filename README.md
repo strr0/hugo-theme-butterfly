@@ -80,8 +80,9 @@ hugo --gc --cleanDestinationDir   # 生产构建，产物在 public/
 > 因此模板内部按 `.Kind`（`taxonomy` / `term`）与 `.Data.Plural`（`categories` / `tags`）分四个分支处理，
 > 修改时务必保留这层判断，否则一个分支的改动会牵连其它页面。
 
-> **文章目录约定**：首页 feed、侧栏统计、搜索索引与相关文章均只取 `content/posts/` 下的文章
+> **文章目录约定**：首页 feed、侧栏统计与相关文章均只取 `content/posts/` 下的文章
 > （模板里统一用 `where site.RegularPages "Type" "posts"` 过滤），`about.md` 这类独立页不会出现在首页列表中。
+> 例外是本地搜索索引 `/search.json`：它取全部 RegularPages，`about.md` 也能被搜到（结果卡标「页面」，见「本地搜索弹窗」）。
 
 ## 目录结构
 
@@ -90,7 +91,7 @@ themes/butterfly/
 ├── layouts/
 │   ├── baseof.html              # 全局骨架（body-wrap / 导航 / 主区 / 侧栏 / 页脚 / 悬浮按钮）
 │   ├── index.html               # 首页（置顶排序 + 文章卡片流 + 分页）
-│   ├── index.search.json        # 本地搜索索引输出模板（产出 /search.json）
+│   ├── index.search.json        # 本地搜索索引输出模板（产出 /search.json，字段 title/url/content/tags/cover/date/type）
 │   ├── _default/
 │   │   ├── list.html            # 通用列表页
 │   │   ├── section.html         # 全部文章页（时间线）
@@ -107,7 +108,7 @@ themes/butterfly/
 │       ├── post-item.html       # 单篇文章卡片
 │       ├── list-body.html       # 通用列表页主体（标题卡 + 卡片流）
 │       ├── aside.html           # 侧边栏卡片组（作者/公告/分类/标签/归档/站点信息/目录）
-│       ├── search.html          # 本地搜索弹窗
+│       ├── search.html          # 本地搜索弹窗（DOM 照官方 SearchModal）
 │       ├── pagination.html      # 分页
 │       ├── footer.html          # 页脚（社交条 + footer-bar）
 │       ├── rightside.html       # 右下角悬浮按钮
@@ -118,7 +119,7 @@ themes/butterfly/
 │   │   └── hello-lottie.svg     # todayCard「hello」动画终帧 SVG（由官方 lottie 离线转换，配合 CSS 书写动画）
 │   └── js/
 │       ├── butterfly.js         # 交互（导航/滚动百分比/深浅色/打字机/随机文章/分类条/目录/说说轮播等）
-│       └── local-search.js      # 本地搜索（拉取 search.json 做前端匹配）
+│       └── local-search.js      # 本地搜索（拉 search.json 做前端匹配，按官方结构渲染结果卡；Ctrl/⌘ + K 开、Esc 关）
 ├── static/img/                  # 兜底与图标资源：default_cover.jpg（banner 无封面时）、404.jpg（封面 onerror）、
 │                                #   friend_404.gif（头像 onerror）、siteicon/（favicon 及 apple / manifest 图标）
 │                                #   loading.gif 是上游遗留，加载动画未移植故当前无引用方
@@ -201,7 +202,7 @@ list:
 
 | 参数 | 说明 |
 |---|---|
-| `params.search.enable` | 本地搜索开关（需同时配置 `outputFormats.SEARCH`） |
+| `params.search.enable` | 本地搜索开关（需同时配置 `outputFormats.SEARCH`），弹窗样式与交互见下节「本地搜索弹窗」 |
 | `params.search.preload` | 首次打开即拉取索引，否则首次使用才加载 |
 | `params.toc.enable` | 文章目录卡（桌面在侧栏，移动端为右下角抽屉） |
 | `params.toc.expand` | 目录是否默认全部展开 |
@@ -218,6 +219,25 @@ list:
 | `params.footer.owner.since` | 版权起始年 |
 | `params.footer.linkList` | 页脚链接数组，字段 `text` `link` |
 | `params.social` + `params.social_icons` | 社交链接与同名键的图标类名 |
+
+### 本地搜索弹窗
+
+DOM 在 `partials/search.html`、结果卡由 `assets/js/local-search.js` 填充、样式在 `butterfly.css` 的「本地搜索」区块，
+三者均照官方 Next 版 `SearchModal`：
+
+- **弹窗**：`width:40rem; max-width:90vw; margin:5rem auto; max-height:80dvh`，圆角 16px + 1px 描边，
+  **无投影**（官方 `--anzhiyu-shadow-lightblack` 的 alpha 恒为 0），滚动交给 `.search-wrap`。
+  官方 CSS 里没有任何 `@media`，窄屏靠 `max-width:90vw` 自适应，因此不再沿用 Hexo 的「≤768px 全屏无圆角」。
+- **遮罩**：`--butterfly-maskbg-deep`（浅色 85% 白 / 深色 85% 黑）+ `backdrop-filter: blur(12px)`，不是黑色半透明。
+- **快捷键**：`Ctrl/⌘ + K` 开、`Esc` 关；空关键字时显示官方提示行「按 Esc 关闭 · 按 Ctrl/⌘ + K 打开」，
+  一旦输入就隐藏（同官方 `tipsVisible && !keyword.trim()`）。
+- **结果卡**：6rem 方封面 + 标题（命中词主色高亮）+ 类型徽章 + 两行摘要 + 底部「作者 · 日期 · 标签」，
+  hover 上抬 2px、换主色描边并露出右箭头。字段来自 `/search.json` 的 `cover` / `date` / `type` / `tags`，
+  作者统一取 `params.author`（本地索引没有逐篇作者），封面缺省为 `/img/default_cover.jpg`、加载失败回退 `/img/404.jpg`。
+- **与官方的差异**：官方是服务端分页 + 逐篇作者，本地搜索一次列全部结果、靠弹窗滚动，**未移植分页**；
+  类型徽章按 section 判定（`content/posts/` 下为「文章」，其余为「页面」）。
+- 索引加载与逐次搜索的转圈块复用官方 `.loading`（2rem 细环 + 主色起边），替掉原版「数据库加载中 + 脉冲图标」；
+  输入框从一开始就可用，不再等索引到位才显示 `.search-wrap`。
 
 ### 相关文章
 
@@ -351,7 +371,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 | 文章详情附属 | `_default/single.html` | `layout/includes/post/{post-copyright,ptool,reward}.pug`（后两者未移植） | `src/components/post/**` |
 | 全部文章 / 时间线 | `_default/section.html` | `layout/archive.pug` | `src/components/archives/ArchiveList.tsx` |
 | 分类 / 标签总览与 term 页 | `_default/taxonomy.html` | `layout/{category,tag}.pug` + `includes/page/*` | `src/components/{categories,tags}/*PageContent.tsx` |
-| 本地搜索 | `layouts/index.search.json` + `assets/js/local-search.js` | `source/js/search/local-search.js` | `src/components/layout/Header/components/SearchModal/` |
+| 本地搜索 | `partials/search.html` + `layouts/index.search.json` + `assets/js/local-search.js` | `layout/includes/third-party/search/local-search.pug`、`source/js/search/local-search.js`、`source/css/_search/**` | `src/components/layout/Header/components/SearchModal/{index.tsx,styles.module.css}`（**观感真值**） |
 | 样式 | `assets/css/butterfly.css`（令牌在文件头 `:root`） | `source/css/{var,_global,_layout,_page,_mode}/**.styl` | `*.module.css` + Tailwind 工具类 |
 | 交互 | `assets/js/butterfly.js` | `source/js/{main,utils,tw_cn}.js`、`source/js/anzhiyu/*.js` | `src/hooks/**`、组件内事件 |
 
@@ -379,6 +399,9 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
   给小了会拍到「布局已在、墨迹为 0」的假象，不能当成样式 bug。验证导航反白态需要一个能真的加载下来的头图：
   文章页封面是远程图床，headless 下常拿不到，可临时把 `params.default_top_img` 指向主题自带的
   `static/img/404.jpg`（内页即变成 `not-home-page` 头图页），取证完再改回空串。
+  测搜索弹窗这类「点了才出现」的浮层，同样用同源 iframe 探针：往 iframe 的 document
+  `dispatchEvent(new KeyboardEvent('keydown', {key:'k', ctrlKey:true}))` 就能开弹窗（不必去点按钮），
+  再给 `#search-input` 赋 `value` 并 `dispatchEvent(new Event('input', {bubbles:true}))` 触发结果渲染。
 - **Hugo 模板**：读 `data/` 目录统一用 `hugo.Data`（见「环境要求」）；`_default/taxonomy.html` 内按 `.Kind` +
   `.Data.Plural` 分四个分支，改前先确认自己命中的是哪一类页面。
 

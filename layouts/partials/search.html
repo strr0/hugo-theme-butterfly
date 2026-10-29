@@ -1,23 +1,27 @@
-{{/* 本地搜索弹窗（原版 layout/includes/third-party/search/local-search.pug 移植） */}}
+{{/* 本地搜索弹窗：结构照官方 Next 版 SearchModal（.searchDialog > .searchNav + .searchWrap），
+   本地实现在索引上匹配，故无服务端分页；输入框左侧放大镜、下方快捷键提示为官方元素 */}}
 <div id="local-search">
   <div class="search-dialog">
     <nav class="search-nav">
       <span class="search-dialog-title">搜索</span>
-      <span id="loading-status"></span>
-      <button class="search-close-button" type="button">
+      <button class="search-close-button" type="button" aria-label="关闭搜索框">
         <i class="anzhiyufont anzhiyu-icon-xmark"></i>
       </button>
     </nav>
-    <div id="loading-database" class="is-center">
-      <i class="anzhiyufont anzhiyu-icon-spinner anzhiyu-pulse-icon"></i><span>  数据库加载中</span>
-    </div>
     <div class="search-wrap">
-      <div id="local-search-input">
-        <div class="local-search-box">
-          <input placeholder="搜索文章" type="text" class="local-search-box--input">
-        </div>
+      <div class="search-input-container">
+        <i class="anzhiyufont anzhiyu-icon-magnifying-glass search-icon"></i>
+        <input id="search-input" class="search-input" type="text" placeholder="输入关键字，按 Enter 搜索">
       </div>
-      <hr>
+      <div class="search-tips" id="search-tips">
+        <span>按 Esc 关闭</span>
+        <span>·</span>
+        <span>按 Ctrl/⌘ + K 打开</span>
+      </div>
+      <div id="loading-database" class="search-loading">
+        <div class="search-loading-spinner"></div>
+        <div class="search-loading-text">数据库加载中</div>
+      </div>
       <div id="local-search-results"></div>
     </div>
   </div>

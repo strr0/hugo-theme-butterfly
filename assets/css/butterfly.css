@@ -50,9 +50,13 @@
   --butterfly-toc-link-color: #666261; /* 原版 var.styl $toc-link-color */
   --butterfly-secondtext: rgba(60, 60, 67, 0.8);
   --butterfly-maskbg: rgba(255, 255, 255, 0.6);
+  /* 搜索遮罩专用（官方 --anzhiyu-maskbgdeep）：浅色下是 85% 白而非黑色半透明 */
+  --butterfly-maskbg-deep: rgba(255, 255, 255, 0.85);
   --butterfly-lighttext: var(--butterfly-main);
   --butterfly-hovertext: var(--butterfly-theme);
   --butterfly-shadow-nav: 0 5px 12px -5px rgba(102, 68, 68, 0.05);
+  /* 官方 --anzhiyu-shadow-lightblack：数值里的 alpha 恒为 0，即搜索弹窗实际无投影，只靠描边区分 */
+  --butterfly-shadow-lightblack: 0 5px 12px -5px rgba(102, 68, 68, 0);
   --butterfly-scrollbar: rgba(60, 60, 67, 0.4);
   --butterfly-card-bg-none: rgba(255, 255, 255, 0);
   --style-border: 1px solid var(--butterfly-card-border);
@@ -60,12 +64,11 @@
   --style-border-hover: 1px solid var(--butterfly-main);
   --style-border-avatar: 5px solid var(--butterfly-white);
   --butterfly-wihite-font: #fff;
-  /* 搜索（原版 var.styl：$search-bg #f6f8fa / $search-input-color $font-black / $search-color $theme-color） */
-  --search-bg: #f6f8fa;
-  --search-input-color: #4C4948;
+  /* 搜索令牌（官方 SearchModal）：输入框底色走 --butterfly-secondbg，标题/正文色走 --butterfly-fontcolor
+     —— 原版 var.styl 的 $search-bg #f6f8fa / $search-input-color $font-black #4C4948 在深色下不可读，已弃用 */
   --search-color: var(--butterfly-theme);
-  --search-keyword-highlight: #F47466;
-  --search-result-title: #4C4948;
+  /* 关键词高亮：官方 .resultTitle em / .resultSnippet em 用主色，原版是 #F47466，以官方为准 */
+  --search-keyword-highlight: var(--search-color);
 }
 
 /* 深色模式（对应 schemeDark / data-theme=dark） */
@@ -85,6 +88,7 @@
   --butterfly-toc-link-color: rgba(255, 255, 255, 0.6); /* 原版 darkmode.styl --toc-link-color */
   --butterfly-secondtext: #a1a2b8;
   --butterfly-maskbg: rgba(0, 0, 0, 0.6);
+  --butterfly-maskbg-deep: rgba(0, 0, 0, 0.85);
   --font-color: rgba(255, 255, 255, 0.7); /* 原版 _mode/darkmode.styl L4，分类条/导航等文字暗色下变白 */
   --butterfly-lighttext: #f2b94b;
   --butterfly-hovertext: #0a84ff;
@@ -92,9 +96,6 @@
   --butterfly-scrollbar: rgba(200, 200, 223, 0.4);
   --butterfly-shadow-border: 0 8px 16px -4px rgba(0, 0, 0, 0.25);
   --scrollbar-color: #f2b94b;
-  /* 搜索深色覆盖（原版 _mode/darkmode.styl） */
-  --search-bg: #121212;
-  --search-input-color: rgba(255, 255, 255, 0.7);
 }
 
 /* ========================== 全局 ========================== */
@@ -2434,195 +2435,330 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
   #rightside { right: 16px; bottom: 80px; }
 }
 
-/* ========================== 本地搜索（对照原版 _search/index.styl + local-search.styl 移植） ========================== */
-.search-dialog {
-  position: fixed;
-  top: 5rem;
-  left: 50%;
-  z-index: 1001;
-  display: none;
-  margin-left: -18.75rem;
-  padding: 1.25rem;
-  width: 37.5rem;
-  border-radius: 12px;
-  box-shadow: 0 5px 12px -5px rgba(102, 68, 68, 0);
-  background: var(--butterfly-card-bg);
-  border: var(--style-border);
-  transition: .3s;
-}
-.search-dialog hr { margin: 20px auto; }
-.search-dialog .search-nav {
-  margin: 0 0 14px;
-  color: var(--search-color);
-  font-size: 1.4em;
-  line-height: 1;
-}
-.search-dialog .search-nav .search-dialog-title { margin-right: 10px; }
-.search-dialog .search-nav .search-close-button {
-  float: right;
-  color: #858585;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1em;
-  line-height: 1;
-  padding: 0;
-  transition: color .2s ease-in-out;
-}
-.search-dialog .search-nav .search-close-button:hover { color: var(--search-color); }
-
+/* ========================== 本地搜索（对照官方 Next 版 Header/components/SearchModal/styles.module.css 移植） ========================== */
+/* 遮罩：官方 --anzhiyu-maskbgdeep + 12px 毛玻璃，浅色下是 85% 白（不是原来的黑色半透） */
 #search-mask {
   position: fixed;
-  top: 0; right: 0; bottom: 0; left: 0;
+  inset: 0;
   z-index: 1000;
   display: none;
-  background: rgba(0, 0, 0, .6);
+  opacity: 0;
+  background: var(--butterfly-maskbg-deep);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transform: translateZ(0);
 }
 
-#local-search .search-dialog .local-search-box {
-  margin: 0 auto;
-  max-width: 100%;
-  width: 100%;
-}
-#local-search .search-dialog .local-search-box input {
-  padding: 5px 14px;
-  width: 100%;
-  outline: none;
-  border: 2px solid var(--search-color);
-  border-radius: 40px;
-  background: var(--search-bg);
-  color: var(--search-input-color);
-  -webkit-appearance: none;
-}
-#local-search .search-dialog .search-wrap { display: none; }
-#local-search .search-dialog .local-search__hit-item {
-  position: relative;
-  padding-left: 24px;
-  line-height: 1.7;
-}
-#local-search .search-dialog .local-search__hit-item:hover:before { border-color: var(--butterfly-hovertext); }
-#local-search .search-dialog .local-search__hit-item:before {
-  position: absolute;
-  top: .45em;
-  left: 0;
-  width: .5em;
-  height: .5em;
-  border: 3px solid var(--search-color);
-  border-radius: .5em;
-  background: transparent;
-  content: '';
-  line-height: .5em;
-  transition: all .2s ease-in-out;
-}
-#local-search .search-dialog .local-search__hit-item a {
-  display: block;
-  color: var(--search-result-title);
-  font-weight: 600;
-  cursor: pointer;
-}
-#local-search .search-dialog .local-search__hit-item a:hover { color: var(--search-color); }
-#local-search .search-dialog .local-search__hit-item .search-result {
-  margin: 0 8px 8px 0;
-  word-break: break-all;
-  cursor: pointer;
-}
-#local-search .search-dialog .local-search__hit-item .search-keyword {
-  color: var(--search-keyword-highlight);
-  font-weight: bold;
-}
-#local-search .search-dialog .search-result-list {
-  overflow-y: auto;
-  max-height: calc(80vh - 130px);
-}
-
-/* 搜索结果卡片式覆盖层（原版 _extra/local_search/local_search.css 移植：去小圆点，flex 图文卡片 + 胶囊标签） */
-#local-search .search-dialog .local-search__hit-item:before { content: none !important; }
-#local-search .search-dialog .local-search__hit-item {
-  padding: 10px !important;
-  border-radius: 8px;
+/* 弹窗：官方 .searchDialog —— inset:0 + margin 5rem auto 悬浮居中（上下留 5rem），高度自适应但封顶 80dvh，
+   滚动交给 .search-wrap；阴影令牌本身 alpha 为 0，视觉上只靠 1px 描边区分。
+   注意不要写 opacity:0 —— 进出动画结束后 JS 会清掉 style.animation，基态opacity会把弹窗留在透明态 */
+.search-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  width: 40rem;
+  max-width: 90vw;
+  height: fit-content;
+  max-height: 80dvh;
+  margin: 5rem auto;
+  padding: 0;
   border: var(--style-border);
-  margin-bottom: 10px;
+  border-radius: 16px;
+  box-shadow: var(--butterfly-shadow-lightblack);
+  background: var(--butterfly-card-bg);
+  transition: background-color .3s, box-shadow .3s, border-color .3s;
+  will-change: transform, opacity;
+}
+
+/* 标题栏：官方 .searchNav —— 左标题右圆形关闭钮，底部描边与正文分隔 */
+.search-dialog .search-nav {
   display: flex;
+  flex-shrink: 0;
+  align-items: center;
   justify-content: space-between;
+  padding: .75rem 1.5rem;
+  border-bottom: var(--style-border);
+}
+.search-dialog .search-nav .search-dialog-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--butterfly-fontcolor);
+}
+.search-dialog .search-nav .search-close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--butterfly-secondtext);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .2s, background-color .2s;
+}
+.search-dialog .search-nav .search-close-button:hover {
+  color: var(--butterfly-white);
+  background: var(--butterfly-lighttext);
+}
+
+/* 正文滚动区（官方 .searchWrap）：不再像原版那样「索引加载完才显示」，输入框从一开始可用 */
+#local-search .search-dialog .search-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 1.25rem;
+  overflow-y: auto;
+  border-radius: 0 0 16px 16px;
+}
+
+/* 输入框（官方 .searchInputContainer / .searchInput）：放大镜定在左侧内边距上，
+   常态是 secondbg 底 + 描边，聚焦换卡片底 + 主色描边（原版的 2px 主色胶囊输入框不是官方样式） */
+#local-search .search-dialog .search-input-container {
+  position: relative;
+  display: flex;
   align-items: center;
 }
-#local-search .search-dialog .local-search__hit-item .search-left { width: 35%; }
-#local-search .search-dialog .local-search__hit-item .search-right { width: 60%; }
-#local-search .search-dialog .local-search__hit-item .search-left img {
-  object-fit: cover;
+#local-search .search-dialog .search-input-container .search-icon {
+  position: absolute;
+  left: .875rem;
+  font-size: 1.1rem;
+  color: var(--butterfly-secondtext);
+  pointer-events: none;
+}
+#local-search .search-dialog .search-input {
   width: 100%;
+  padding: .25rem 1rem .25rem 2.5rem;
+  font-size: 1rem;
+  color: var(--butterfly-fontcolor);
   background: var(--butterfly-secondbg);
-  border-radius: 8px;
-}
-#local-search .search-dialog .local-search__hit-item .search-result { cursor: pointer; }
-#local-search .tag-list {
-  padding: 4px 8px;
-  border-radius: 8px;
-  margin-right: 0.5rem;
-  margin-top: 0.5rem;
   border: var(--style-border);
-  cursor: pointer;
+  border-radius: 8px;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color .2s, background-color .2s, box-shadow .2s;
 }
-#local-search .search-dialog .local-search__hit-item .tag-list { display: inline; }
-#local-search .search-dialog .local-search__hit-item .tag-list:hover {
-  background: var(--butterfly-main);
-  color: var(--butterfly-white);
+#local-search .search-dialog .search-input:focus {
+  background-color: var(--butterfly-card-bg);
+  border-color: var(--search-color);
+}
+#local-search .search-dialog .search-input::placeholder { color: var(--butterfly-secondtext); }
+
+/* 快捷键提示（官方 .searchTips，仅关键字为空时显示，由 JS 切 display） */
+#local-search .search-dialog .search-tips {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: .75rem;
+  font-size: .8rem;
+  color: var(--butterfly-secondtext);
+}
+
+/* 索引加载（官方 .loading / .loadingSpinner：2rem 细环 + 主色起边，替掉原来的脉冲图标） */
+#local-search .search-dialog .search-loading { padding: 2rem; text-align: center; }
+#local-search .search-dialog .search-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto 1rem;
+  border: var(--style-border);
+  border-top: 2px solid var(--search-color);
+  border-radius: 50%;
+  animation: searchSpin 1s linear infinite;
+}
+#local-search .search-dialog .search-loading-text {
+  font-size: .9rem;
+  color: var(--butterfly-secondtext);
+}
+
+/* 结果区（官方 .searchResults / .resultsHeader / .resultsList） */
+#local-search .search-dialog .search-results {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1.5rem;
+}
+#local-search .search-dialog .results-header { padding-left: .5rem; margin-bottom: .5rem; }
+#local-search .search-dialog .results-count { font-size: .875rem; color: var(--butterfly-secondtext); }
+#local-search .search-dialog .results-list { display: flex; flex-direction: column; gap: .75rem; }
+
+/* 结果卡（官方 .resultItem）：6rem 方封面 + 标题/类型徽章 + 两行摘要 + 底部元信息；
+   hover 时上抬 2px、换主色描边与主色浅投影，并露出右侧箭头、封面图轻微放大 */
+#local-search .search-dialog .result-item {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border: var(--style-border);
+  border-radius: 12px;
+  background: var(--butterfly-card-bg);
+  cursor: pointer;
+  transition: all .25s ease-in-out;
+}
+#local-search .search-dialog .result-item:hover {
+  border-color: var(--search-color);
+  box-shadow: 0 4px 12px var(--butterfly-theme-op);
+  transform: translateY(-2px);
+}
+#local-search .search-dialog .result-item:hover .result-arrow { opacity: 1; transform: translateX(0); }
+#local-search .search-dialog .result-item:hover .result-thumbnail img { transform: scale(1.1); }
+
+#local-search .search-dialog .result-thumbnail {
+  flex-shrink: 0;
+  width: 6rem;
+  height: 6rem;
+  overflow: hidden;
+  border-radius: 8px;
+}
+#local-search .search-dialog .result-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--butterfly-secondbg);
+  transition: transform .3s ease-out;
+}
+
+#local-search .search-dialog .result-details {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+}
+#local-search .search-dialog .result-content { flex-grow: 1; }
+#local-search .search-dialog .result-title-wrapper {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  margin-bottom: .5rem;
+}
+#local-search .search-dialog .result-title {
+  display: -webkit-box;
+  flex: 1;
+  overflow: hidden;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--butterfly-fontcolor);
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+#local-search .search-dialog .result-type-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: .25rem;
+  align-items: center;
+  padding: .2rem .5rem;
+  font-size: .75rem;
+  color: var(--search-color);
+  white-space: nowrap;
+  background: var(--butterfly-theme-op);
+  border-radius: 6px;
+}
+#local-search .search-dialog .result-type-badge .anzhiyufont { font-size: .7rem; }
+
+#local-search .search-dialog .result-snippet {
+  display: -webkit-box;
+  margin-bottom: .75rem;
+  overflow: hidden;
+  font-size: .9rem;
+  line-height: 1.6;
+  color: var(--butterfly-secondtext);
+  word-break: break-all;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 关键词高亮（官方 .resultTitle em / .resultSnippet em） */
+#local-search .search-dialog .search-keyword {
+  color: var(--search-keyword-highlight);
+  font-style: normal;
+}
+#local-search .search-dialog .result-title .search-keyword { font-weight: 600; }
+#local-search .search-dialog .result-snippet .search-keyword { font-weight: 500; }
+
+#local-search .search-dialog .result-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: .5rem;
+  margin-top: auto;
+}
+#local-search .search-dialog .result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  align-items: center;
+  font-size: .8rem;
+  color: var(--butterfly-secondtext);
+}
+#local-search .search-dialog .result-author,
+#local-search .search-dialog .result-date { white-space: nowrap; }
+#local-search .search-dialog .result-tags { display: flex; gap: .375rem; }
+#local-search .search-dialog .result-tags .tag {
+  padding: .15rem .5rem;
+  font-size: .75rem;
+  color: var(--search-color);
+  white-space: nowrap;
+  background: var(--butterfly-theme-op);
+  border-radius: 6px;
+}
+#local-search .search-dialog .result-arrow {
+  font-size: 1.25rem;
+  color: var(--search-color);
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: all .25s ease-in-out;
+}
+
+/* 空结果（官方 .noResults 两行文案） */
+#local-search .search-dialog .no-results { padding: 2rem; text-align: center; }
+#local-search .search-dialog .no-results-text {
+  margin-bottom: .5rem;
+  font-size: 1.1rem;
+  color: var(--butterfly-fontcolor);
+}
+#local-search .search-dialog .no-results-tip {
+  font-size: .9rem;
+  color: var(--butterfly-secondtext);
 }
 
 /* 导航搜索按钮（原版 nav.styl：font-size 1.3em，文字 span 隐藏只留图标） */
 #nav #search-button { font-size: 1.3em; padding-left: 0; }
 #search-button a.site-page.social-icon.search span { display: none; }
 
-/* 工具类与加载动画（原版 _global/index.styl .is-center / function.styl） */
+/* 工具类与弹窗进出动画（曲线对齐官方 gsap 时间线：进场 0.35s power3.out / 24px 上浮 + .98 缩放，出场 0.25s power2.inOut） */
 .is-center { text-align: center; }
-.anzhiyu-pulse-icon { animation: anzhiyu-pulse-animation 1s infinite linear; }
 
-@keyframes anzhiyu-pulse-animation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes searchDialogIn {
+  0% { opacity: 0; transform: translateY(24px) scale(.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes titleScale {
-  0% { opacity: 0; transform: scale(.7); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes searchDialogOut {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(16px) scale(.98); }
 }
-@keyframes search_close {
-  0% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(20px); }
-}
-@keyframes to_show {
+@keyframes searchMaskIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
-@keyframes to_hide {
+@keyframes searchMaskOut {
   0% { opacity: 1; }
   100% { opacity: 0; }
 }
+@keyframes searchSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
-/* 搜索弹窗响应式（原版 maxWidth768 / maxHeight680 / maxHeight580） */
-@media screen and (max-width: 768px) {
-  .search-dialog {
-    top: 0;
-    left: 0;
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 0 !important;
-  }
-  #local-search .search-dialog .search-result-list {
-    padding-bottom: 40px;
-    max-height: 75vh !important;
-  }
-}
-@media screen and (max-height: 680px) {
-  .search-dialog { top: 2rem; }
-}
-@media screen and (max-height: 580px) {
-  .search-dialog {
-    top: 0;
-    left: 0;
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 0 !important;
-  }
-}
+/* 弹窗无额外断点：官方 SearchModal 的 styles.module.css 里根本没有 @media，
+   窄屏靠 width:40rem + max-width:90vw 自然收窄，短屏靠 max-height:80dvh + .search-wrap 滚动；
+   原版的「≤768px / ≤580px 全屏无圆角」与「≤680px top:2rem」不照搬 */

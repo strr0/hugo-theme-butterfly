@@ -28,7 +28,8 @@
   {{ $js := resources.Get "js/butterfly.js" | minify | fingerprint }}
   <script src="{{ $js.RelPermalink }}" defer></script>
   {{ if site.Params.search.enable }}
-  {{ $lsCfg := dict "path" ("search.json" | relURL) "preload" (site.Params.search.preload | default true) "root" site.BaseURL }}
+  {{/* author 供官方结果卡底部的作者元信息使用（本地索引没有逐篇作者字段） */}}
+  {{ $lsCfg := dict "path" ("search.json" | relURL) "preload" (site.Params.search.preload | default true) "root" site.BaseURL "author" (site.Params.author | default site.Title) }}
   <script>window.localSearchConfig = {{ $lsCfg | jsonify | safeJS }};</script>
   {{ $searchJs := resources.Get "js/local-search.js" | minify | fingerprint }}
   <script src="{{ $searchJs.RelPermalink }}" defer></script>

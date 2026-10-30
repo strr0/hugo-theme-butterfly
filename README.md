@@ -312,7 +312,8 @@ math: true          # 不加则正文里的 $$ … $$ 只当普通文字显示
 
 `transform.ToMath` 的选项与理由：
 
-- `output="htmlAndMathml"`：可读性与复制语义都更好，代价是**必须**配 KaTeX 样式表，于是才有 head 里的按需引入。
+- `output="htmlAndMathml"`：可读性与复制语义都更好，代价是**必须**配 KaTeX 样式表，于是才有 head 里的按需引入；
+  另一个代价是纯文本里一份公式会变成三层拷贝，所以 `index.search.json` 先剔掉 `<math>…</math>` 再 `plainify`。
 - `displayMode = (eq .Type "block")`：块级定界符走居中显示模式，行内随文。
 - `throwOnError = false`：对齐官方 Next 版 `src/lib/katex-render.ts`，单条公式写错只渲染成红色错误文本，不炸整站构建。
 - `strict = "warn"`：KaTeX 默认把「数学模式里出现中文」当错误（`unicodeTextInMathMode`），配合上一条就落成红字。
@@ -328,6 +329,10 @@ headless 实测：公式 15.4px / 正文 14px（正好 1.10 倍），块级公�
 
 **未移植**：官方 `.md-editor-katex-block` / `.math-block` 是编辑器产物专属类名（本地走 passthrough 没有这层 DOM）；
 Hexo 的 `katex_copytex` 右键复制源码；MathJax `tags:'ams'` 的自动编号（KaTeX 用 `\tag{…}` 手动编号）。
+
+写作时的两条硬约束（都是实测撞到的）：公式**不要写进标题**（侧栏目录取标题纯文本，会显示成 `\( … \)` 源码）；
+从 Hexo / MathJax 站点搬旧文时，`$…$` 行内定界符默认不认（改成 `\( … \)` 或整行 `$$ … $$`），
+换行分隔符要写 `\\` 而不是 `\\\\`。
 
 语法与效果对照、开关写法见站点文章 `content/posts/latex-math-syntax.md`。
 
@@ -518,14 +523,21 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 - 文章页的「字数 / 阅读时长」已实现（`.WordCount` / `.ReadingTime`），但整块顶部信息卡只在有头图时渲染
   （见上文回退链），无头图时连同日期一起隐藏。
 - 首页分类导航条用横向滚动实现，未引入原版依赖的 swiper。
-- **公式进纯文本会重复**：`output=htmlAndMathml` 的公式经 `.Plain` / `plainify` 会把 MathML 语义字符、`<annotation>`
+- **公式进纯文本会重复**：`output=htmlAndMathml` 的公式经 `plainify` 会把 MathML 语义字符、`<annotation>`
   里的 TeX 源码与 HTML 三层文本拼在一起（`E=mc2E = mc^2E=mc2`）。首页卡片摘要已留 `description` 出口规避；
-  `/search.json` 用的仍是 `.Plain` 全文，公式所在段落的命中词可能带出 TeX 噪声。
+  `/search.json` 取全文，但 `index.search.json` 会先用 `replaceRE` 剔掉 `<math>…</math>` 再 `plainify`，
+  只剩读者实际看到的那一份（实测两篇公式密集的笔记：索引 28.4KB → 12.9KB，单篇 5440/10345 → 1186/2759 字）。
+- **公式不能写进标题**：侧栏「文章目录」（`.TableOfContents`）取的是标题的**纯文本**，`### 3.1 \(\frac{dy}{dx}\)`
+  会在目录里原样显示成源码（正文标题本身渲染正常）。公式请放到标题下方单独一段。
+- KaTeX 字体没有带圈数字（①②③）与中文类字符，写进公式（即使包在 `\text{}` 里）会各触发行
+  `WARN transform.ToMath`；靠浏览器回退字体能正常显示，但复制不出 LaTeX。想静默就把渲染钩子里的
+  `strict` 改成 `"ignore"`。
 - **KaTeX 样式表走 jsDelivr**：`katex@0.18.4/dist/katex.min.css` 带 SRI，与图标字体同理依赖联网；
   离线时公式结构仍在但排版退化。自建镜像后替换 `partials/head.html` 里的那条链接即可。
 - **配置了但当前未被模板读取的参数**：`params.aside.position`（侧栏固定右侧）、`params.home_top.banner.enable`
   （`[banner]` 表存在即渲染）、`params.home_top.default_descr`、`params.subtitle_js.enable`（只看 `lines`）、
-  以及站点配置里顶层的 `site_start_time`（`params.` 下的那一项才生效）。
+  `params.home_top.category[].shadow`（阴影由 CSS 按 `.blue/.red/.green` 类提供，内联 `box-shadow` 会被消毒）。
+  建站时间只认 `params.site_start_time`，写在顶层 `[params]` 外面不生效（站点配置已清掉这一项）。
 
 ## 致谢与许可
 

@@ -1,5 +1,8 @@
 {{- /* 本地搜索索引：对应原版 hexo-generator-searchdb 的 search.xml，供 /search.json 使用。
        date / type / cover 是官方 SearchModal 结果卡（作者·日期·类型徽章·封面）需要的字段 */ -}}
+{{- /* 索引文本：先把 KaTeX 的 MathML 层剔掉再转纯文本。output=htmlAndMathml 的公式在纯文本里会
+       出现三份拷贝（MathML 语义字符 + <annotation> 里的 TeX 源码 + HTML 呈现层），
+       去掉 <math>…</math> 后只剩读者实际看到的那一份，索引体积与结果卡摘要都会干净很多 */ -}}
 {{- $ser := slice -}}
 {{- range site.RegularPages -}}
   {{- $tagNames := slice -}}
@@ -9,7 +12,7 @@
   {{- $ser = $ser | append (dict
         "title" .Title
         "url" .RelPermalink
-        "content" .Plain
+        "content" (.Content | replaceRE "(?s)<math[^>]*>.*?</math>" "" | plainify)
         "tags" $tagNames
         "cover" (.Params.cover | default "/img/default_cover.jpg")
         "date" (.Date.Format "2006-01-02")

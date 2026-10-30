@@ -2320,6 +2320,25 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
 #aside-content .aside-list > .aside-list-item .content > .title:hover { color: var(--butterfly-hovertext); }
 #aside-content .aside-list > .aside-list-item.no-cover { min-height: 4.4em; }
 
+/* ========================== 数学公式（KaTeX，构建期渲染，只缺样式） ==========================
+   几何取自官方 Next 版 PostContent.module.css L3093-3123 的 KaTeX 段：
+   公式整体放大 1.1 倍（与原版 MathJax 的 chtml.scale: 1.1 一致），
+   块级公式横向可滚动且内部不换行，避免长公式撑破卡片。
+   官方 .md-editor-katex-block / .math-block 那几条是编辑器产物专属类名，本地走 passthrough 渲染，不移植。 */
+#article-container .katex { font-size: 1.1em; }
+#article-container .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: .5em 0;
+  /* 原版 third-party.styl 对 mjx-container/.has-jax 同样强制 normal：
+     正文行高偏大时，块级公式会因行盒被拉高而上下留白过多 */
+  line-height: normal;
+}
+#article-container .katex-display > .katex { white-space: nowrap; }
+/* 长公式可横滑但不显滚动条（原版 katex.hide_scrollbar 默认 true） */
+#article-container .katex-display { scrollbar-width: none; }
+#article-container .katex-display::-webkit-scrollbar { display: none; }
+
 /* ========================== 响应式 ========================== */
 @media screen and (max-width: 1200px) {
   #content-inner.layout { padding: 10px 1.5rem 1.5rem; flex-direction: column; }

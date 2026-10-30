@@ -1,0 +1,28 @@
+{{- /* 数学公式渲染钩子（配合 hugo.toml 里的 passthrough 定界符）
+   开关：文章 front matter 写 math: true 才渲染，没写或写 false 的页面按原文显示公式
+   （与原版 Hexo 主题的 per_page 行为一致：定界符里的内容仍在正文里可读，只是不排版）。
+   判定集中在 partials/math-enabled.html，head.html 引样式表时读同一个开关。
+   passthrough 扩展把 $$…$$ / \[…\] / \(…\) 内的原文原样交给我们，这里用 Hugo 内嵌的
+   KaTeX 引擎在构建时直接出 HTML，不需要客户端 MathJax/KaTeX 脚本。
+   - output=htmlAndMathml：同时输出 HTML 与 MathML，可读性与无障碍更好，
+     但必须配 katex.min.css（见 partials/head.html 的按需引入）
+   - displayMode：块级定界符走居中公式，行内定界符随文字排版
+   - throwOnError=false：对齐官方 Next 版，单条公式写错只渲染成红色错误文本，不炸整站构建
+   - strict=warn：KaTeX 对「数学模式里出现中文」这类不受官方 LaTeX 规范支持的便捷写法默认是
+     strict=error，会被上面的 throwOnError=false 接住变成红字（中文博客写反应条件、\text{其中}
+     很容易撞上）。warn 让它照样渲染、构建时只出一条警告指认是哪个字符，比红字好用 */ -}}
+{{- if not (partial "math-enabled.html" .Page) }}
+  {{- /* .Inner 不含定界符，按原文显示时补回来；块级统一补 $$…$$ */ -}}
+  {{- if eq .Type "block" }}<p>{{ printf "$$%s$$" .Inner }}</p>
+  {{- else }}{{ printf "\\(%s\\)" .Inner }}
+  {{- end }}
+{{- else }}
+  {{- $opts := dict "output" "htmlAndMathml" "displayMode" (eq .Type "block") "throwOnError" false "strict" "warn" }}
+  {{- with try (transform.ToMath .Inner $opts) }}
+    {{- with .Err }}
+      {{- errorf "KaTeX 无法渲染该数学公式：%s（位置：%s）" . $.Position }}
+    {{- else }}
+      {{- .Value }}
+    {{- end }}
+  {{- end }}
+{{- end -}}

@@ -18,7 +18,7 @@ banner 左下角的彩色分类胶囊、右栏三列两行的推荐卡组，以�
 
 - Hugo **extended** ≥ 0.156（实际下限由模板里的 `hugo.Data` 写法决定，`theme.toml` 的 `min_version` 已对齐为 `0.156.0`）；
   开发与验证环境为 0.168.0
-- 联网加载图标字体 CSS（可自建镜像后改 `params.iconfont_css`）
+- 联网加载图标字体 CSS（可自建镜像后改 `params.iconfont_css`）；用了数学公式的文章还要联网加载 KaTeX 样式表（见「数学公式」）
 - **Hugo ≥ v0.156.0 弃用了 `.Site.Data`**：模板读取站点 `data/` 目录统一写 `hugo.Data.xxx`（写 `site.Data.xxx` 同样会报
   `WARN deprecated: .Site.Data ... Use hugo.Data instead.`），主题内已按此实现，构建应无 deprecated 告警。
   若必须停在 0.156 以下，得把 `partials/home_top.html`、`partials/essay_bar.html` 里的 `hugo.Data.*` 改回 `site.Data.*`
@@ -54,6 +54,13 @@ pagerSize = 10
 hugo server -D                    # 开发预览（含草稿），默认 http://localhost:1313
 hugo server -D -p 1317            # 本仓库做像素比对取证时统一用 1317
 hugo --gc --cleanDestinationDir   # 生产构建，产物在 public/
+```
+
+要用数学公式需要两步：上面那句站点配置（主题的 passthrough 默认值才进得来），加上文章 front matter 的 `math: true`（逐篇开关，原因见「数学公式」）：
+
+```toml
+[markup]
+  _merge = 'shallow'
 ```
 
 新增文章用 `hugo new posts/<slug>.md`。**注意** `hugo new` 优先取**站点根** `archetypes/`，只有站点没有同名模板时
@@ -92,13 +99,16 @@ themes/butterfly/
 │   ├── baseof.html              # 全局骨架（body-wrap / 导航 / 主区 / 侧栏 / 页脚 / 悬浮按钮）
 │   ├── index.html               # 首页（置顶排序 + 文章卡片流 + 分页）
 │   ├── index.search.json        # 本地搜索索引输出模板（产出 /search.json，字段 title/url/content/tags/cover/date/type）
+│   ├── _markup/
+│   │   └── render-passthrough.html # 数学公式渲染钩子：文章开了 math 才交给 Hugo 内嵌 KaTeX，否则按原文显示
 │   ├── _default/
 │   │   ├── list.html            # 通用列表页
 │   │   ├── section.html         # 全部文章页（时间线）
 │   │   ├── single.html          # 文章详情页
 │   │   └── taxonomy.html        # 分类/标签总览页 + term 页（按 .Kind 分支）
 │   └── partials/
-│       ├── head.html            # meta / 资源 / 深浅色预初始化 / 主题配置注入
+│       ├── head.html            # meta / 资源 / 深浅色预初始化 / 主题配置注入（含 KaTeX 样式表按需引入）
+│       ├── math-enabled.html    # 数学公式开关判定（渲染钩子与 head 共用）
 │       ├── header.html          # 顶部导航（含搜索入口、随机文章、移动端汉堡菜单）
 │       ├── essay_bar.html       # 首页「即刻」说说条
 │       ├── home_top.html        # 首页顶部卡片区 #home_top
@@ -124,6 +134,7 @@ themes/butterfly/
 │                                #   friend_404.gif（头像 onerror）、siteicon/（favicon 及 apple / manifest 图标）
 │                                #   loading.gif 是上游遗留，加载动画未移植故当前无引用方
 ├── archetypes/default.md        # 主题侧文章模板（含 cover / top / topGroup 示例）；站点根 archetypes/ 优先级更高
+├── hugo.toml                    # 主题默认配置：目前只有数学公式的 passthrough 定界符（需站点 [markup] _merge 才生效）
 ├── .gitignore                   # 忽略 public/、resources/_gen/、构建锁与本地覆盖配置 hugo.local.toml
 ├── LICENSE                      # GPL-3.0
 └── theme.toml
@@ -142,6 +153,7 @@ themes/butterfly/
 | `params.index_img` | 首页 Hero 大图，留空为无头图模式（原版默认）；非空时导航走「透明 + 反白」态，见「导航滚动动效」 |
 | `params.default_top_img` | 内页默认头图（文章页回退链的最后一环），同样触发导航的反白态 |
 | `params.iconfont_css` | 远程图标字体 CSS 地址 |
+| `params.math` | 数学公式的全站默认开关（逐篇 front matter 的 `math` 优先，见「数学公式」） |
 | `params.site_start_time` | 建站时间（`2006-01-02`），侧栏「运行天数」与站点信息卡据此计算；**必须写在 `[params]` 下**，站点配置顶层的同名键模板读不到 |
 | `pagination.pagerSize` | 每页文章数，建议偶数 |
 
@@ -239,6 +251,86 @@ DOM 在 `partials/search.html`、结果卡由 `assets/js/local-search.js` 填充
 - 索引加载与逐次搜索的转圈块复用官方 `.loading`（2rem 细环 + 主色起边），替掉原版「数据库加载中 + 脉冲图标」；
   输入框从一开始就可用，不再等索引到位才显示 `.search-wrap`。
 
+### 数学公式（KaTeX，构建期渲染）
+
+LaTeX 由 **Hugo 内嵌的 KaTeX 引擎在构建期**渲染成 HTML（`transform.ToMath`），页面里没有数学相关的 JS，也不引 MathJax。
+**默认关**：文章 front matter 写 `math: true` 才渲染。五处配合：
+
+| 文件 | 作用 |
+| --- | --- |
+| `hugo.toml`（主题） | 声明 goldmark passthrough 扩展与定界符默认值 |
+| `layouts/partials/math-enabled.html` | 开关判定（渲染钩子与 head 共用，不会出现「引了样式没渲染」或反之） |
+| `layouts/_markup/render-passthrough.html` | 渲染钩子：开着才把捕获的原文交给 `transform.ToMath`，关着按原文显示 |
+| `partials/head.html` | 开关开着才补一份 KaTeX 样式表 |
+| `assets/css/butterfly.css`「数学公式」区块 | 公式字号 1.1、块级公式横向滚动 |
+
+```yaml
+# content/posts/<slug>.md
+---
+title: "文章标题"
+math: true          # 不加则正文里的 $$ … $$ 只当普通文字显示
+---
+```
+
+两级开关（对齐原版 Hexo 的 `enable` + `per_page`）：
+
+| 写法 | 效果 |
+| --- | --- |
+| 文章 `math: true` | 仅该页渲染公式并加载样式表，其它页一律不引（首页 / 分类页 / 未开的文章都不带） |
+| 文章 `math: false` | 即使站点开了默认值，这一页也不渲染 |
+| 站点 `[params] math = true` | 全站默认开（每页都引样式表，与原版非 per_page 模式一致），逐篇可用 `math: false` 关掉 |
+| 两者都不写 | 全关（默认） |
+
+未开启的页面里定界符内容按原文显示（块级统一补成 `$$ … $$`，行内补 `\( … \)`），与未接数学功能时一致。
+实现里两个 Hugo 细节（都实测过）：
+
+- 站点 `[params]` **不会**合并进 `.Page.Params`，默认值得自己兜；也不能写
+  `.Page.Params.math | default site.Params.math` —— 页面显式 `math: false` 会被当空值漏给站点。
+- 判「键是否存在」不能用 `in`（`in hmaps.Params "math"` 两种参数顺序都返回 false），
+  要 `index` 取值再与 `nil` 比：没写过的键取出来是 nil，显式写的 false 不是。
+
+**站点必配一行**：Hugo 对 `[markup]` 这一类的默认合并策略是 `_merge = 'none'`，而且策略**只能由站点声明**
+（主题自己写 `_merge` 无效，实测如此）。站点 `hugo.toml` 里要保留：
+
+```toml
+[markup]
+  _merge = 'shallow'
+```
+
+少了它，主题里的 passthrough 定界符根本不会进配置，正文的公式会原样输出成纯文本（构建不报错，属于静默失效）。
+`shallow` 只补站点没定义的键，站点自己写的 `[markup.goldmark]`、`[markup.tableOfContents]` 仍以站点为准。
+
+定界符（**行内只开 `\(...\)`**，这是刻意取舍）：
+
+| 类型 | 写法 | 说明 |
+| --- | --- | --- |
+| 块级 | `$$…$$`、`\[…\]` | 居中独立成行 |
+| 行内 | `\(…\)` | 随文字排版 |
+| 行内（默认不开） | `$…$` | 不开是因为正文里「$5」这类金额会被当成公式起点；要用就在站点配置里加 `inline = [['$','$']]`，并记得正文的美元符号写成 `\$` |
+
+代码块与行内代码里的定界符**不会**被解析（passthrough 只作用于正文），贴 LaTeX 源码是安全的。
+
+`transform.ToMath` 的选项与理由：
+
+- `output="htmlAndMathml"`：可读性与复制语义都更好，代价是**必须**配 KaTeX 样式表，于是才有 head 里的按需引入。
+- `displayMode = (eq .Type "block")`：块级定界符走居中显示模式，行内随文。
+- `throwOnError = false`：对齐官方 Next 版 `src/lib/katex-render.ts`，单条公式写错只渲染成红色错误文本，不炸整站构建。
+- `strict = "warn"`：KaTeX 默认把「数学模式里出现中文」当错误（`unicodeTextInMathMode`），配合上一条就落成红字。
+  中文博客写反应条件、`\text{其中}` 很容易撞上，改 `warn` 后照样渲染、构建时只出一条警告指认是哪个字符；想静音改 `ignore`。
+  更干净的写法是把中文塞进 `\text{…}`（text 模式不告警），速查文里就是这么写的。
+
+样式逐条取自官方 Next 版 `PostContent.module.css` L3093-3123 的 KaTeX 段：`.katex{font-size:1.1em}`（与 Hexo
+`mathjax.pug` 的 `chtml.scale: 1.1` 同值）、`.katex-display{overflow-x:auto;overflow-y:hidden;padding:.5em 0}`、
+`.katex-display > .katex{white-space:nowrap}`；`line-height:normal` 与隐藏滚动条来自 Hexo
+`_extra/**/third-party.styl` L74-84（`.katex-wrap` + `katex.hide_scrollbar` 默认 true）。
+headless 实测：公式 15.4px / 正文 14px（正好 1.10 倍），块级公式宽 962 = 容器 962（宽屏不溢出、无滚动条），
+390px 窄屏 `scrollWidth 453 > clientWidth 330`，在卡片内横滚且不撑破容器。
+
+**未移植**：官方 `.md-editor-katex-block` / `.math-block` 是编辑器产物专属类名（本地走 passthrough 没有这层 DOM）；
+Hexo 的 `katex_copytex` 右键复制源码；MathJax `tags:'ams'` 的自动编号（KaTeX 用 `\tag{…}` 手动编号）。
+
+语法与效果对照、开关写法见站点文章 `content/posts/latex-math-syntax.md`。
+
 ### 相关文章
 
 由 Hugo 内置的 Related 机制驱动，需在站点配置中声明索引：
@@ -315,7 +407,8 @@ cover: "/img/default_cover.jpg"   # 卡片封面，缺省则全宽无图
 top: true                         # 置顶（首页排最前，卡片显示图钉 +「置顶」）
 topGroup: true                    # 进入首页顶部推荐卡组（带「荐」角标）
 top_img: ""                       # 仅页面使用：单独设置内页头图
-description: "本页 SEO 描述"       # 缺省回退 params.description
+math: true                        # 仅含公式的文章需要：开本页的 LaTeX 渲染（见「数学公式」）
+description: "本页 SEO 描述"       # 缺省回退 params.description；写了还会同时作为首页卡片摘要（见下）
 ---
 
 正文摘要……
@@ -326,6 +419,8 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 ```
 
 - 首页卡片摘要取 `.Summary`（纯文本，超 200 字截断），因此 `<!--more-->` 之前的内容即为摘要；未写 `<!--more-->` 时取全文前段。
+- 摘要默认取纯文本，可用 front matter `description` 覆盖（`partials/post-item.html` 里 `$article.Description | default $plain`）——
+  首段就含公式的文章必须覆盖，否则纯文本会把 MathML 字符、TeX 源码与 HTML 三层拼在一起（见「数学公式」）。
 - 全站发布日期最新的一篇文章，卡片会自动带上「最新」角标。
 - `cover` 同时是文章页头图的来源之一，回退链为 `top_img → cover → params.default_top_img`；三者皆空则文章页不渲染顶部信息卡。
 
@@ -372,6 +467,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 | 全部文章 / 时间线 | `_default/section.html` | `layout/archive.pug` | `src/components/archives/ArchiveList.tsx` |
 | 分类 / 标签总览与 term 页 | `_default/taxonomy.html` | `layout/{category,tag}.pug` + `includes/page/*` | `src/components/{categories,tags}/*PageContent.tsx` |
 | 本地搜索 | `partials/search.html` + `layouts/index.search.json` + `assets/js/local-search.js` | `layout/includes/third-party/search/local-search.pug`、`source/js/search/local-search.js`、`source/css/_search/**` | `src/components/layout/Header/components/SearchModal/{index.tsx,styles.module.css}`（**观感真值**） |
+| 数学公式 | `layouts/partials/math-enabled.html`（开关）+ `layouts/_markup/render-passthrough.html` + 主题 `hugo.toml` + `head.html` 按需引 CSS + `butterfly.css`「数学公式」区块 | `layout/includes/third-party/math/{katex,mathjax}.pug`、`_config.yml` 的 `mathjax/katex` 段、`_extra/**/third-party.styl` L74-84 | `src/lib/katex-render.ts`、`PostContent.module.css` L3093-3123（**观感真值**） |
 | 样式 | `assets/css/butterfly.css`（令牌在文件头 `:root`） | `source/css/{var,_global,_layout,_page,_mode}/**.styl` | `*.module.css` + Tailwind 工具类 |
 | 交互 | `assets/js/butterfly.js` | `source/js/{main,utils,tw_cn}.js`、`source/js/anzhiyu/*.js` | `src/hooks/**`、组件内事件 |
 
@@ -393,6 +489,11 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
   测 hover 态（如「随便逛逛」浮层）时 headless 无法真实悬停，需临时放一个同源 iframe 探针页注入 inline style，
   且**必须先 `transition = 'none'`**——`--virtual-time-budget` 不推进 CSS 过渡的动画时钟，否则量到的仍是过渡起始值。
   探针页属临时取证产物，用完即删。
+  headless 快照时机有三条规律（探针实验证实，别再靠猜）：`--dump-dom` / `--screenshot` 都在**主文档 load**
+  时取快照，plain 与 `--timeout=N` 都**不推进**定时器，只有 `--virtual-time-budget` 会让 `setTimeout` 真正触发；
+  虚拟时间会被**真实网络请求消耗**（CDN 字体、远程图床），预算给到 40s 也可能只跑到第 60 个 tick；
+  同源 iframe 的 `onload` 会被页面内远程图片拖住，快照时常常还没触发，改用 `setInterval` 轮询，
+  并分两轮测量（先读结构与计算样式，字体就绪后再复测依赖宽度的结论）。
   测滚动态（如 `nav-menu-scrolled`）时用 `document.scrollingElement.scrollTop = 600` +
   `dispatchEvent(new Event('scroll'))` 驱动（headless 虚拟时间下 `window.scrollTo()` 不生效），再读
   `getComputedStyle` 与 `getBoundingClientRect()`。另注意图标字体由远程 CDN 加载，`--virtual-time-budget`
@@ -417,6 +518,11 @@ description: "本页 SEO 描述"       # 缺省回退 params.description
 - 文章页的「字数 / 阅读时长」已实现（`.WordCount` / `.ReadingTime`），但整块顶部信息卡只在有头图时渲染
   （见上文回退链），无头图时连同日期一起隐藏。
 - 首页分类导航条用横向滚动实现，未引入原版依赖的 swiper。
+- **公式进纯文本会重复**：`output=htmlAndMathml` 的公式经 `.Plain` / `plainify` 会把 MathML 语义字符、`<annotation>`
+  里的 TeX 源码与 HTML 三层文本拼在一起（`E=mc2E = mc^2E=mc2`）。首页卡片摘要已留 `description` 出口规避；
+  `/search.json` 用的仍是 `.Plain` 全文，公式所在段落的命中词可能带出 TeX 噪声。
+- **KaTeX 样式表走 jsDelivr**：`katex@0.18.4/dist/katex.min.css` 带 SRI，与图标字体同理依赖联网；
+  离线时公式结构仍在但排版退化。自建镜像后替换 `partials/head.html` 里的那条链接即可。
 - **配置了但当前未被模板读取的参数**：`params.aside.position`（侧栏固定右侧）、`params.home_top.banner.enable`
   （`[banner]` 表存在即渲染）、`params.home_top.default_descr`、`params.subtitle_js.enable`（只看 `lines`）、
   以及站点配置里顶层的 `site_start_time`（`params.` 下的那一项才生效）。

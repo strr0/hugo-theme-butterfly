@@ -7,6 +7,7 @@ categories: []
 cover: "/img/default_cover.jpg"
 # top: true        # 首页置顶
 # topGroup: true   # 加入首页顶部推荐卡组
+# math: true       # 正文含 LaTeX 公式才打开（不开时 $$ … $$ 按原文显示）
 description: ""
 ---
 

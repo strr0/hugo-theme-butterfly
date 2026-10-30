@@ -23,6 +23,13 @@
   })();
 </script>
 
+{{/* 数学公式：LaTeX 已在构建期由 layouts/_markup/render-passthrough.html 交给 Hugo 内嵌的 KaTeX
+   渲染成 HTML，这里只按需补一份 KaTeX 样式表（无 JS）。
+   开关与渲染钩子用同一个：文章 front matter 的 math: true（缺省可在站点 [params] 里设） */}}
+{{ if partial "math-enabled.html" .Page }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.18.4/dist/katex.min.css" integrity="sha384-u1zONI5gPXUx0UKI62c75/zww972y0v2rSK5ZYlVdS6xEuWDeZWUI66v6t1gvlXJ" crossorigin="anonymous">
+{{ end }}
+
 {{ with site.Params.iconfont_css }}<link rel="stylesheet" href="{{ . }}">{{ end }}
 {{ $css := resources.Get "css/butterfly.css" | minify | fingerprint }}
 <link rel="stylesheet" href="{{ $css.RelPermalink }}">

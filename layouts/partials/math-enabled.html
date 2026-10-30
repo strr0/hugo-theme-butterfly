@@ -1,0 +1,12 @@
+{{- /* 数学公式开关：文章 front matter 的 math 优先，其次站点 [params] math（全站默认开），都没有则关。
+   渲染钩子与 head.html 共用这一份判定，避免「样式表引了公式没渲染」或反之。
+   两个 Hugo 细节（都实测过）：
+   - 站点 [params] 不会合并进 .Page.Params，所以默认值要自己兜；也不能写
+     .Page.Params.math | default site.Params.math —— 页面显式 math: false 会被当空值漏给站点。
+   - 判「键是否存在」不能用 in（in hmaps.Params "math" 两种参数顺序都返回 false），
+     要用 index 取值再与 nil 比：未定义的键取出来是 nil，显式写的 false 不是。 */ -}}
+{{- $page := . }}
+{{- $on := site.Params.math | default false }}
+{{- $v := index $page.Params "math" }}
+{{- if ne $v nil }}{{ $on = $v }}{{ end }}
+{{- return $on }}

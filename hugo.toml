@@ -1,0 +1,25 @@
+# 主题默认配置。只有 [params] 那类会自动与站点合并（站点同名键优先）；
+# 这里只声明数学公式所需的 Goldmark passthrough 扩展，
+# 捕获到的 LaTeX 由 layouts/_markup/render-passthrough.html 交给 Hugo 内嵌的 KaTeX 引擎。
+#
+# 公式**默认不渲染**：文章 front matter 要写 math: true 才开这一页的渲染与 KaTeX 样式表
+# （判定集中在 layouts/partials/math-enabled.html；站点 [params] math = true 可作全站默认，
+# 逐篇用 math: false 关掉）。
+#
+# 注意：Hugo 现在 [markup] 这一类的默认合并策略是 _merge = 'none'，而且策略只能由站点声明
+# （主题自己写 _merge 无效）。所以主题装了这些默认值后，站点 hugo.toml 仍需补一行才生效：
+#
+#   [markup]
+#     _merge = 'shallow'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.extensions]
+      [markup.goldmark.extensions.passthrough]
+        enable = true
+        # 块级：$$…$$ 与 \[…\]；行内：\(…\)
+        # 刻意不开单美元 $…$，否则正文里「$5」这类金额会被当成公式起点
+        # 想用 $…$ 自己在站点配置里加，但要记得正文里的美元符号得写成 \$
+        [markup.goldmark.extensions.passthrough.delimiters]
+          block = [['\[', '\]'], ['$$', '$$']]
+          inline = [['\(', '\)']]

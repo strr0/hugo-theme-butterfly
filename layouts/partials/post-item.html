@@ -66,6 +66,10 @@
         </span>
       {{ end }}
     </div>
-    <div class="content">{{ $article.Summary | plainify | truncate 200 }}</div>
+    {{/* 卡片摘要：默认取正文纯文本（截 200 字）；写了 front matter description 则用它。
+        首段含公式的文章需要这个出口——公式是构建期渲染的，plainify 会把 MathML 的
+        语义字符、TeX 源码注释与 HTML 三层文本拼在一起（E=mc2E = mc^2E=mc2） */}}
+    {{ $plain := $article.Summary | plainify | truncate 200 }}
+    <div class="content">{{ $article.Description | default $plain }}</div>
   </div>
 </div>

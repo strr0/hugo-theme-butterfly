@@ -1,13 +1,24 @@
 {{/* 首页文章分类导航条（移植原版 layout/includes/categoryGroup.pug） */}}
+{{/* 当前项高亮：构建期按标题判定，与 tag_bar.html 同法。原先由 butterfly.js 的 categoriesBarActive
+     拿「URL 第三段」去查 id="{{ .Page.Title }}"，两个口径对不上：
+     ① Hugo 会把 term URL 小写化（Algebra → /categories/algebra/），英文分类永远查不中；
+     ② 那句 `urlinfo === location.pathname` 对所有不含 %XX 的地址恒为真，
+     于是英文分类页反而把「首页」点亮。静态站没必要等 JS 再补类名 */}}
+{{ $cur := "" }}
+{{ if eq .Kind "home" }}
+  {{ $cur = "首页" }}
+{{ else if and (eq .Kind "term") (eq .Data.Plural "categories") }}
+  {{ $cur = .Title }}
+{{ end }}
 <div id="categoryBar">
   <div id="category-bar" class="category-bar">
     <div id="catalog-bar">
       <div id="catalog-list">
-        <div class="catalog-list-item" id="首页">
+        <div class="catalog-list-item{{ if eq $cur "首页" }} select{{ end }}" id="首页">
           <a href="{{ site.Home.RelPermalink }}">首页</a>
         </div>
         {{ range site.Taxonomies.categories.ByCount }}
-          <div class="catalog-list-item" id="{{ .Page.Title }}">
+          <div class="catalog-list-item{{ if eq $cur .Page.Title }} select{{ end }}" id="{{ .Page.Title }}">
             <a href="{{ .Page.RelPermalink }}">{{ .Page.Title }}</a>
           </div>
         {{ end }}

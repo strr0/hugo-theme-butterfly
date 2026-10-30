@@ -203,20 +203,8 @@ function updateCategoryBarNext() {
   var atEnd = items.scrollLeft + items.clientWidth + 1 >= items.scrollWidth;
   btn.classList.toggle('is-rotated', overflow && atEnd);
 }
-function categoriesBarActive() {
-  var urlinfo = decodeURIComponent(window.location.pathname);
-  var categoryBar = document.getElementById('category-bar');
-  if (!categoryBar) return;
-  if (urlinfo === '/' || urlinfo === location.pathname) {
-    var home = categoryBar.querySelector('#首页');
-    if (home) home.classList.add('select');
-  } else {
-    if (!/\/categories\/.*?\//.test(urlinfo)) return;
-    var nowCategorie = urlinfo.split('/')[2];
-    var el = categoryBar.querySelector('#' + CSS.escape(nowCategorie));
-    if (el) el.classList.add('select');
-  }
-}
+// 分类条当前项高亮（原 categoriesBarActive）已改由 partials/category_bar.html 在构建期直接输出 .select：
+// JS 拿 URL 段查 id="分类标题" 的口径不成立（Hugo 会把 term URL 小写化），且首页判定条件对未编码地址恒真。
 
 // ---------- 首页「即刻」说说条（官方 EssayBar：每 3s 上移一条，行高 30px，到底后回到第一条） ----------
 function initEssayCarousel() {
@@ -321,7 +309,6 @@ document.addEventListener('DOMContentLoaded', function () {
   initToggleMenu();
   initRunTime();
   mouseleaveHomeCard();
-  categoriesBarActive();
   updateCategoryBarNext();
   var catalogList = document.getElementById('catalog-list');
   if (catalogList) {

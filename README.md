@@ -524,8 +524,16 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 
 ## 已知限制
 
-- **中文分类 / 标签名**会经 URL 编码，`params.home_top.category.path` 等配置里直接写中文路径即可，
-  当前项高亮逻辑已按解码后的路径匹配。
+- **分类 / 标签名的大小写与编码**：Hugo 会把 term URL 小写化（`algebra` 与 `Algebra` 归并到同一个
+  `/categories/algebra/`），而 term 页的 `.Title` 是 slug 首字母大写后的形式（`algebra` → `Algebra`），
+  所以文章卡上的分类小标签（取 front matter 原值）与分类条 / 总览页（取 `.Title`）可能大小写不一致，
+  想统一就在 front matter 里写成你要展示的那种写法。中文名的 URL 会经百分号编码，
+  `params.home_top.category.path` 等配置里直接写中文路径即可。
+- **分类条 / 标签条的当前项高亮在构建期完成**：`partials/category_bar.html` 与 `tag_bar.html` 直接比较
+  `.Title` 输出 `.select` / `.selected` 类，不解析 URL。分类条原先是由 `butterfly.js` 拿「URL 第三段」去查
+  `id="分类名"`，两处口径对不上：英文分类因 URL 小写化永远查不中，且 `urlinfo === location.pathname`
+  这条首页判定对所有不含 %XX 的地址恒为真，于是英文分类页反而点亮「首页」（现已删除该函数）。
+  中文分类名恰好 URL 与标题一致，所以这个 bug 长期只影响英文分类。
 - **图标依赖远程图标字体**：离线环境或镜像失效时图标会缺失，可自建镜像后替换 `params.iconfont_css`。
 - **未移植模块**：评论区、音乐播放器、图片 Lightbox、右键菜单、PWA、加载动画（`static/img/loading.gif` 已就位但无调用方）、
   简繁切换、友链 / 朋友圈 / 说说等特色页面、文章上下篇导航、`404.html` 页面（主题没有 404 模板，需自行补）。

@@ -1,7 +1,7 @@
 {{ define "main" }}
   {{/* Hugo 里 _default/taxonomy.html 会同时命中 taxonomy 列表页与 term 页，必须再判 .Kind */}}
   {{ if and (eq .Kind "term") (eq .Data.Plural "categories") }}
-    {{/* 分类 term 页——照官方 /categories/xxx：顶部分类条（当前分类由 butterfly.js 的 categoriesBarActive 打 .select）
+    {{/* 分类 term 页——照官方 /categories/xxx：顶部分类条（当前分类由 category_bar.html 在构建期比对 .Title 打 .select）
          + 与首页同款文章卡流 + 侧栏；官方该页无「分类 - xxx」标题卡，标题信息由高亮胶囊承载 */}}
     <div id="recent-posts" class="recent-posts">
       {{ partial "category_bar.html" . }}

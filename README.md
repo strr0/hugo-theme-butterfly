@@ -330,9 +330,13 @@ headless 实测：公式 15.4px / 正文 14px（正好 1.10 倍），块级公�
 **未移植**：官方 `.md-editor-katex-block` / `.math-block` 是编辑器产物专属类名（本地走 passthrough 没有这层 DOM）；
 Hexo 的 `katex_copytex` 右键复制源码；MathJax `tags:'ams'` 的自动编号（KaTeX 用 `\tag{…}` 手动编号）。
 
-写作时的两条硬约束（都是实测撞到的）：公式**不要写进标题**（侧栏目录取标题纯文本，会显示成 `\( … \)` 源码）；
-从 Hexo / MathJax 站点搬旧文时，`$…$` 行内定界符默认不认（改成 `\( … \)` 或整行 `$$ … $$`），
-换行分隔符要写 `\\` 而不是 `\\\\`。
+写作时的三条约束（都是实测撞到的）：
+
+1. 公式**不要写进标题**（侧栏目录取标题纯文本，会显示成 `\( … \)` 源码）。
+2. 从 Hexo / MathJax 站点搬旧文时，`$…$` 行内定界符默认不认（改成 `\( … \)` 或整行 `$$ … $$`），
+   换行分隔符要写 `\\` 而不是 `\\\\`。
+3. 公式编号用 `\tag{N}`（整条块级公式）或行末 `\quad (N)`（`cases` 逐行编号，`\tag` 放进会报错），
+   不要用 ①②③ 这类带圈数字（KaTeX 无对应字形，每个字符一行告警）。
 
 语法与效果对照、开关写法见站点文章 `content/posts/latex-math-syntax.md`。
 
@@ -451,6 +455,10 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 
 - 993–1200px 区间仍是 Hexo 原版的「横向滚动卡片流」，而官方该区间保持上面的 50/50 桌面布局，属已知的有意分歧。
 - ≤1200 的滚动模式里推荐卡要退回固定 `200×168`，百分比宽在 `width:auto` 的滚动容器中会塌成 0。
+- **双列断点（≥1201px）下 `#recent-posts` 是 `flex-wrap` 容器，term 页顶部的标签条 / 分类条也是它的 flex item**，
+  必须占满整行：标签条靠 `#recent-posts > .tag-bar-container{flex:0 0 100%}` 钉住，否则它按内容收缩、与首篇文章卡
+  挤在同一条 flex line，并被默认的 `align-items:stretch` 拉到与卡片等高（标签 ≤3 个时胶囊变成竖长条；标签多时
+  标签条自身已有几行高，所以一直看不出来）。分类条不受影响是因为 `#category-bar` 写死了 `width:100%` + `height:50px`。
 
 ## 参照文件速查（原版 ↔ 移植版）
 
@@ -494,6 +502,9 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   测 hover 态（如「随便逛逛」浮层）时 headless 无法真实悬停，需临时放一个同源 iframe 探针页注入 inline style，
   且**必须先 `transition = 'none'`**——`--virtual-time-budget` 不推进 CSS 过渡的动画时钟，否则量到的仍是过渡起始值。
   探针页属临时取证产物，用完即删。
+  **量移动端几何不要用 `--window-size=390/420`**：Chromium 有约 500px 的最小窗口宽度，写小了仍按 500 布局，
+  截图只截到左边那一段，看起来像「右侧被裁、整页横向溢出」的假 bug（实测同一页 420 窗口截图被裁，
+  而同源 iframe 探针里 `vw=390`、`docScrollW=390` 完全正常）。窄视口一律改用 iframe 探针量。
   headless 快照时机有三条规律（探针实验证实，别再靠猜）：`--dump-dom` / `--screenshot` 都在**主文档 load**
   时取快照，plain 与 `--timeout=N` 都**不推进**定时器，只有 `--virtual-time-budget` 会让 `setTimeout` 真正触发；
   虚拟时间会被**真实网络请求消耗**（CDN 字体、远程图床），预算给到 40s 也可能只跑到第 60 个 tick；
@@ -530,8 +541,9 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 - **公式不能写进标题**：侧栏「文章目录」（`.TableOfContents`）取的是标题的**纯文本**，`### 3.1 \(\frac{dy}{dx}\)`
   会在目录里原样显示成源码（正文标题本身渲染正常）。公式请放到标题下方单独一段。
 - KaTeX 字体没有带圈数字（①②③）与中文类字符，写进公式（即使包在 `\text{}` 里）会各触发行
-  `WARN transform.ToMath`；靠浏览器回退字体能正常显示，但复制不出 LaTeX。想静默就把渲染钩子里的
-  `strict` 改成 `"ignore"`。
+  `WARN transform.ToMath`；靠浏览器回退字体能正常显示，但复制不出 LaTeX。公式编号请改用
+  `\tag{N}` 或 `\quad (N)`（本站两篇数学笔记已这样改完，构建已做到包 `transform.ToMath` 在内的零告警）；
+  其余中文场景想静默就把渲染钩子里的 `strict` 改成 `"ignore"`。
 - **KaTeX 样式表走 jsDelivr**：`katex@0.18.4/dist/katex.min.css` 带 SRI，与图标字体同理依赖联网；
   离线时公式结构仍在但排版退化。自建镜像后替换 `partials/head.html` 里的那条链接即可。
 - **配置了但当前未被模板读取的参数**：`params.aside.position`（侧栏固定右侧）、`params.home_top.banner.enable`

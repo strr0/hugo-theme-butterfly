@@ -1465,6 +1465,48 @@ a.catalog-more:hover { color: var(--butterfly-main); background: var(--butterfly
   box-shadow: var(--butterfly-shadow-main);
 }
 #pagination .page-number:hover, #pagination .extend:hover { color: var(--butterfly-hovertext); }
+/* 省略号占位（类名沿用 Hexo paginator 与官方 Pagination.module.css 的 .space）：不可点的 span，
+   没底色没阴影也没 hover，不跟数字按同一 35px 宽；左右用官方的 .2rem 内边距而不是外边距，
+   因为它不计入胶囊尺寸；窄屏整块不显示（见下面按 anzhiyu 原版那一段） */
+#pagination .space {
+  min-width: 0;
+  padding: 0 0.2rem;   /* 官方 .space{padding:0 .2rem} */
+  flex-shrink: 0;   /* 不给压：不留这一条时它会被 flex 压到只剩一个点 */
+  height: 35px;
+  line-height: 35px;
+  color: var(--butterfly-secondtext);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: default;
+}
+/* 上下页按钮里的文案：桌面只显箭头（保持原来的外观），窄屏才换成文字 */
+#pagination .extend-text { display: none; }
+
+/* 移动端照 anzhiyu 原版：页码与省略号整块隐藏，只留两个整块的「上一页 / 下一页」按钮——
+   官方 Pagination.module.css 在 768px 以下为 .paginationNav .pagination{display:none}，
+   .extend 改成 position:static + width:100%、50px 高、12px 圆角 + card-bg 底 + always 描边 + shadow-border，
+   并隐掉 svg 改用文案（两条各 width:100% 靠 flex 收缩平分，实得各 50% - gap/2）；
+   Hexo 版 source/css/_layout/pagination.styl 同口径（页码与 .space 都 display:none!important、
+   extend 占一半宽、i{display:none} + :before 出上一页/下一页）。
+   页码在窄屏不参与排版，LoveIt 的 ±2 窗口再宽也不会把首页撑出横向滚动条 */
+@media screen and (max-width: 768px) {
+  #pagination { gap: .5rem; }   /* 官方 .paginationNav{gap:.5rem} */
+  #pagination .page-number,
+  #pagination .space { display: none; }
+  #pagination .extend {
+    margin: 0;
+    width: 100%;   /* 官方原样，不写 calc(50% - …)：收缩交给 flex */
+    height: 3.125rem; line-height: 3.125rem;
+    background: var(--butterfly-card-bg);
+    border: var(--style-border-always);
+    border-radius: 12px;
+    box-shadow: var(--butterfly-shadow-border);
+    font-size: 1rem;
+  }
+  /* 官方窄屏下 .extend svg{display:none}，靠文字区分上/下一页 */
+  #pagination .extend i { display: none; }
+  #pagination .extend .extend-text { display: inline; }
+}
 
 /* ========================== 分类/标签总览页（首页分类条「更多」进入，官方预览站 /categories/ CategoryPage 、/tags/ TagPage 模块） ========================== */
 /* 官方 .categoryCloudAmount{max-width:1400px;min-height:400px;margin:.5rem auto 0} */

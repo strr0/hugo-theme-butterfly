@@ -475,6 +475,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 | 卡片纵向间距 | 三档全部拉开为 12 / 12 / 16px：卡↔卡 `.doubleColumnContainer ≤768{gap:.75rem}`（卡片自身 `margin:0`）、分类条→首卡 `.categoryBarContainer{margin-bottom:.5rem}` + `.main-content{gap:.25rem}`、末卡→分页 `.paginationNav{margin:1rem 0 0}` | 同值。两个坑：① 卡↔卡间距取决于官方 `post.default.double_column`——为 `true` 时走 `margin:0` + 12px gap（线上站实测 12px，即此档），为 `false` 时 `.recentPostItem{margin:1rem 0}` 在 flex 列里**不合并**，会变成 16+12+16=44px；② 首卡那条原先写 10px，比后面的卡片更贴分类条 |
 | 分类胶囊 | `.categoryBar ≤768{padding:0 2px}` + `.catalogListItem span{height:80%; border-radius:30px}` → 胶囊高 40（`CategoryBar.module.css`）；溢出时 `.catalogBar{overflow-x:auto; scrollbar-width:none}` 手指横滑，`.catalogMore` 隐藏、`.categoryBarNext` 仅在溢出时出现 | `#category-bar` 在移动端必须连**上下**内边距一起清掉，否则 50px 高度里只剩 34px 内容高，80% 的胶囊缩到 27px。选中项另需 `#category-bar .catalog-list-item.select a{border-radius:30px}`：基态 `.select` 把圆角钉成桌面的 8px，特异性 (0,2,1) 高于移动端那条 (0,1,1)。横滑两个坑：① 滚动容器挂在 `#catalog-list` 而非 `#catalog-bar`（后者还装着翻页按钮与「更多」，官方那两个在滚动区之外）；② 要给 `#catalog-list` 补 `min-width:0`，否则 flex 子项默认 `min-width:auto` 撑开父级，而基态 `#catalog-bar{overflow-y:hidden}` 会让它的 `overflow-x` 计算值从 visible 变成 auto，滚动就跑到外层、按钮被一起滚走。390px 实测：list `client 320 / scroll 1090` 可滑，bar `360/360` 不滑，滑到底 `scrollLeft=770` 时按钮加 `.is-rotated` 且 `left=340` 钉在右端；桌面端（1390）仍是 `overflow-x:hidden`、全部放得下、按钮不显示 |
 | 侧边栏 | `.asideContent ≤992{display:none}`（`Sidebar.module.css`） | 只隐藏首页（`#body-wrap.home #aside-content`）——文章页的侧栏里挂着移动端目录抽屉 `#card-toc`，整块隐藏会打断它 |
+| 分页 | `.paginationNav{gap:.5rem}` + `.pagination{gap:.5rem}`、页码 `2.5rem` 方块、省略号 `.space{padding:0 .2rem}`；**官方 ≤768 是 `.pagination{display:none}`**——窄屏整块页码隐藏、只留两个 `width:100%` 靠 flex 收缩平分的「上一页/下一页」按钮（`Pagination.module.css` L186-212，Hexo 版 `pagination.styl` ≤768 同此口径） | **页码显示逻辑照 LoveIt**（本地 `LoveIt/layouts/partials/paginator.html`）：首页/末页常驻 + 当前页左右各 2 页（LoveIt 原文 `gt n (sub cur 3) && lt n (add cur 3)`，这里写成 ±2 闭区间）+ 一段缺口只一个 `.space`（LoveIt 用 Scratch 的 `ellipsed/shouldEllipse` 状态机，这里用「保留页与上一保留页不连续」判定，等价），**不留「总数 ≤5 全列」的特例**（LoveIt 没有；代价是 5 页停在第 1 页会写成 `1 2 3 … 5`，省略号只盖住 1 页——用户确认照它）。上/下一页箭头是 LoveIt 没有、我们保留的。窄屏不跟 LoveIt（它是 `.pagination{white-space:nowrap}` + `li{margin:0 20px}`，页一多同样溢出），而是回到 anzhiyu 原版：`.page-number`/`.space` 整块 `display:none`，`.extend` 按官方 `width:100%` + 50px 高 + 12px 圆角 + card-bg 底 + always 描边 + shadow-border，隐掉箭头 `i`、显示模板新增的 `.extend-text`（桌面 `display:none`，观感与改动前一致）。为什么必须隐藏页码：±2 最宽一行是 7 数字 + 2 省略号 + 2 箭头，按现档 `margin:0 16px` 要 641px，390 档可用只有 374px（上一轮收紧到 4px 也要 425px）。实测 320 / 360 / 390 / 768 四档 `docScrollW ≤ innerW`、`.extend` 实宽 143 / 163 / 178 / 367（=（nav 宽 − 8）/ 2）；769 与 1400 档 11 项单行（769 档行宽 641 ≤ navW 711）、边距仍 16px；上一轮的 ≤768 `margin:0 4px` + `flex-wrap` 两条已删 |
 
 - 卡片日期官方是**相对时间**（「4个月前」），本站仍是绝对日期，属内容/行为层，未随这轮样式改动。
 
@@ -491,7 +492,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 | 首页顶部卡片区 | `partials/home_top.html` | `layout/includes/categoryGroup.pug`、`source/css/_layout/home_top.styl` | `src/components/home/HomeTop/{HomeTop.tsx,HomeTop.module.css}`、`HelloLottie.tsx`（**几何真值**） |
 | 分类条 / 标签条 | `partials/category_bar.html`、`tag_bar.html` | `layout/includes/page/{categories,tags}.pug` | `src/components/home/HomeTop/{CategoryBar,TagBar}.tsx` |
 | 文章卡片流 | `partials/post_cards.html`、`post-item.html` | `layout/index.pug`（卡片内联） | `src/components/home/FeedArticleList/` |
-| 分页 | `partials/pagination.html` | `layout/includes/pagination.pug` | `src/components/home/Pagination/` |
+| 分页 | `partials/pagination.html`（页码窗口逻辑取第四参照：`LoveIt/layouts/partials/paginator.html`） | `layout/includes/pagination.pug` | `src/components/home/Pagination/` |
 | 侧边栏 | `partials/aside.html` | `layout/includes/sidebar.pug`、`includes/widget/card_*.pug` | `src/components/home/Sidebar/` |
 | 页脚 / 悬浮按钮 | `partials/footer.html`、`rightside.html` | `layout/includes/{footer,rightside}.pug` | `src/components/layout/Footer/` |
 | 文章详情附属 | `_default/single.html` | `layout/includes/post/{post-copyright,ptool,reward}.pug`（后两者未移植） | `src/components/post/**` |
@@ -507,6 +508,7 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
 - **参照系**：观感一律以官方 Next 前端 `anheyu-app-frontend`（blog.anheyu.com 实际渲染的版本）为准，
   `hexo-theme-anzhiyu` 只作结构与配色令牌的旁证——两者并不总是一致
   （例：HomeTop 左右栏 50/50 等分 vs Hexo 的固定 600px 右栏）。各模块对应的上游文件见「参照文件速查」。
+  **分页是唯一的例外**：页码显示逻辑按用户指定参考本地 `LoveIt`，而观感（胶囊尺寸/间距/窄屏按钮）仍按 anzhiyu 原版。
 - **样式**：全部集中在 `assets/css/butterfly.css`，按 `/* ==== 区块 ==== */` 注释分块；深色模式用
   `[data-theme="dark"]` 前缀覆盖。设 `line-height` 时注意本主题 body 是 `2`（远大于 Tailwind 的 1.5），
   从官方搬过来的「内容撑高」规则需显式收紧行高，否则会被 flex 收缩连带影响兄弟元素。

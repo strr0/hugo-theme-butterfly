@@ -12,7 +12,7 @@
         {{ end }}
         {{ $i = add $i 1 }}
       {{ end }}
-      <img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="scrollToTop()" src="{{ site.Params.avatar }}" size="50px">
+      <img class="footer_mini_logo" title="返回顶部" alt="返回顶部" onclick="scrollToTop()" src="{{ site.Params.avatar | strings.TrimPrefix "/" | relURL }}" size="50px">
       {{ $i = 0 }}
       {{ range $name, $link := . }}
         {{ if ge $i $half }}
@@ -35,7 +35,7 @@
         {{ $since := site.Params.footer.owner.since }}
         {{ $year := now.Format "2006" }}
         <span class="copyright">&copy;{{ if and $since (ne (string $since) $year) }}{{ $since }} - {{ end }}{{ $year }} By
-          <a class="footer-bar-link" href="{{ "/" | relURL }}" title="{{ site.Params.author | default site.Title }}">{{ site.Params.author | default site.Title }}</a>
+          <a class="footer-bar-link" href="{{ site.Home.RelPermalink }}" title="{{ site.Params.author | default site.Title }}">{{ site.Params.author | default site.Title }}</a>
         </span>
       </div>
       <span id="footer-type-tips">=&gt; ️ ️已挑选{{ len (where site.RegularPages "Type" "posts") }}篇文章呈上，可供品读</span>

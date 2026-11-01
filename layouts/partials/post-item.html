@@ -17,7 +17,7 @@
     <div class="post_cover {{ $leftOrRight }}">
       <a href="{{ $article.RelPermalink }}" title="{{ $article.Title }}" style="display: flex;height: 100%;">
         <img class="post_bg" loading="lazy" alt="{{ $article.Title }}" style="pointer-events: none"
-          src="{{ $article.Params.cover }}" onerror="this.onerror=null;this.src='/img/404.jpg'">
+          src="{{ $article.Params.cover | strings.TrimPrefix "/" | relURL }}" onerror="this.onerror=null;this.src='{{ "img/404.jpg" | relURL }}'">
       </a>
     </div>
   {{ end }}
@@ -59,7 +59,7 @@
       {{ if and (ne $meta.tags false) $article.Params.tags }}
         <span class="article-meta tags">
           {{ range $article.Params.tags }}
-            <a class="article-meta__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/" onclick="window.event.cancelBubble=true;">
+            <a class="article-meta__tags" href="{{ "tags/" | relURL }}{{ . | urlize }}/" onclick="window.event.cancelBubble=true;">
               <span><i class="anzhiyufont anzhiyu-icon-hashtag"></i>{{ . }}</span>
             </a>
           {{ end }}

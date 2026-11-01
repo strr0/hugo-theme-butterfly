@@ -6,12 +6,12 @@
         {{ $pm := site.Params.post_meta | default dict }}
         {{ if and $pm.categories .Params.categories }}
           {{ range .Params.categories }}
-            <a class="post-meta-categories" href="{{ "/categories/" | relURL }}{{ . | urlize }}/">{{ . }}</a>
+            <a class="post-meta-categories" href="{{ "categories/" | relURL }}{{ . | urlize }}/">{{ . }}</a>
           {{ end }}
         {{ end }}
         {{ if and $pm.tags .Params.tags }}
           {{ range .Params.tags }}
-            <a class="post-tag-link" href="{{ "/tags/" | relURL }}{{ . | urlize }}/" tabindex="-1">{{ . }}</a>
+            <a class="post-tag-link" href="{{ "tags/" | relURL }}{{ . | urlize }}/" tabindex="-1">{{ . }}</a>
           {{ end }}
         {{ end }}
         <h1 id="CrawlerTitle">{{ .Title }}</h1>
@@ -37,9 +37,9 @@
           <i class="anzhiyufont anzhiyu-icon-copyright"></i>
         </div>
         <div class="post-copyright__author_box">
-          <a class="post-copyright__author_img" href="{{ "/" | relURL }}" title="头像">
-            <img class="post-copyright__author_img_back" src="{{ $avatar }}" alt="头像">
-            <img class="post-copyright__author_img_front" src="{{ $avatar }}" alt="头像">
+          <a class="post-copyright__author_img" href="{{ site.Home.RelPermalink }}" title="头像">
+            <img class="post-copyright__author_img_back" src="{{ $avatar | strings.TrimPrefix "/" | relURL }}" alt="头像">
+            <img class="post-copyright__author_img_front" src="{{ $avatar | strings.TrimPrefix "/" | relURL }}" alt="头像">
           </a>
           <div class="post-copyright__author_name">{{ site.Params.author | default site.Title }}</div>
           <div class="post-copyright__author_desc">{{ site.Params.subtitle }}</div>
@@ -61,7 +61,7 @@
             <div class="post-meta__box__category-list">
               {{ range .Params.categories }}
                 {{ $count := len (where (where site.RegularPages "Type" "posts") "Params.categories" "intersect" (slice .)) }}
-                <a class="post-meta__box__categoryes" href="{{ "/categories/" | relURL }}{{ . | urlize }}/"><span class="categoryes-punctuation"><i class="anzhiyufont anzhiyu-icon-inbox"></i></span>{{ . }}<span class="categoryesPageCount">{{ $count }}</span></a>
+                <a class="post-meta__box__categoryes" href="{{ "categories/" | relURL }}{{ . | urlize }}/"><span class="categoryes-punctuation"><i class="anzhiyufont anzhiyu-icon-inbox"></i></span>{{ . }}<span class="categoryesPageCount">{{ $count }}</span></a>
               {{ end }}
             </div>
           {{ end }}
@@ -69,7 +69,7 @@
             <div class="post-meta__box__tag-list">
               {{ range .Params.tags }}
                 {{ $count := len (where (where site.RegularPages "Type" "posts") "Params.tags" "intersect" (slice .)) }}
-                <a class="post-meta__box__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/"><span class="tags-punctuation"><i class="anzhiyufont anzhiyu-icon-tag"></i></span>{{ . }}<span class="tagsPageCount">{{ $count }}</span></a>
+                <a class="post-meta__box__tags" href="{{ "tags/" | relURL }}{{ . | urlize }}/"><span class="tags-punctuation"><i class="anzhiyufont anzhiyu-icon-tag"></i></span>{{ . }}<span class="tagsPageCount">{{ $count }}</span></a>
               {{ end }}
             </div>
           {{ end }}
@@ -89,7 +89,7 @@
               {{ $cover := .Params.cover | default .Params.top_img | default "" }}
               <div>
                 <a href="{{ .RelPermalink }}" title="{{ .Title }}">
-                  {{ with $cover }}<img class="cover" src="{{ . }}" alt="cover">{{ end }}
+                  {{ with $cover }}<img class="cover" src="{{ . | strings.TrimPrefix "/" | relURL }}" alt="cover">{{ end }}
                   <div class="content is-center">
                     <div class="date"><i class="anzhiyufont anzhiyu-icon-calendar-days fa-fw"></i> {{ .Date.Format "2006-01-02" }}</div>
                     <div class="title">{{ .Title }}</div>

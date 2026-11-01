@@ -14,7 +14,7 @@
         "url" .RelPermalink
         "content" (.Content | replaceRE "(?s)<math[^>]*>.*?</math>" "" | plainify)
         "tags" $tagNames
-        "cover" (.Params.cover | default "/img/default_cover.jpg")
+        "cover" (.Params.cover | default "img/default_cover.jpg" | strings.TrimPrefix "/" | relURL)
         "date" (.Date.Format "2006-01-02")
         "type" (cond (eq .Section "posts") "文章" "页面")
       ) -}}

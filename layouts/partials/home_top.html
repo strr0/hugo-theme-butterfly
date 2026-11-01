@@ -65,8 +65,8 @@
                 <a href="{{ .RelPermalink }}" title="{{ .Title }}">
                   <span class="recent-post-top-text">荐</span>
                   <img class="post_bg" alt="{{ .Title }}" loading="lazy"
-                    src="{{ .Params.cover | default "/img/default_cover.jpg" }}"
-                    onerror="this.onerror=null;this.src='/img/404.jpg'">
+                    src="{{ .Params.cover | default "img/default_cover.jpg" | strings.TrimPrefix "/" | relURL }}"
+                    onerror="this.onerror=null;this.src='{{ "img/404.jpg" | relURL }}'">
                 </a>
               </div>
               <div class="recent-post-info">

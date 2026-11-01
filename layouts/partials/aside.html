@@ -9,11 +9,11 @@
             <div class="author-info__sayhi" id="author-info__sayhi" onclick="changeSayHelloText()"></div>
           {{ end }}
           <div class="author-info-avatar">
-            <img class="avatar-img" src="{{ site.Params.avatar }}" alt="avatar" onerror="this.onerror=null;this.src='/img/friend_404.gif'">
+            <img class="avatar-img" src="{{ site.Params.avatar | strings.TrimPrefix "/" | relURL }}" alt="avatar" onerror="this.onerror=null;this.src='{{ "img/friend_404.gif" | relURL }}'">
           </div>
           <div class="author-info__description">{{ site.Params.description }}</div>
           <div class="author-info__bottom-group">
-            <a class="author-info__bottom-group-left" href="{{ site.Params.aside.author_link | default "/" | relURL }}">
+            <a class="author-info__bottom-group-left" href="{{ site.Params.aside.author_link | default (site.Home.RelPermalink) }}">
               <h1 class="author-info__name">{{ site.Params.author | default site.Title }}</h1>
               <div class="author-info__desc">{{ site.Params.subtitle }}</div>
             </a>
@@ -85,7 +85,7 @@
               {{ $p := . }}
               {{ $cover := .Params.cover | default "" }}
               <div class="aside-list-item{{ if not $cover }} no-cover{{ end }}">
-                {{ with $cover }}<a class="thumbnail" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}"><img src="{{ . }}" alt="{{ $p.Title }}"></a>{{ end }}
+                {{ with $cover }}<a class="thumbnail" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}"><img src="{{ . | strings.TrimPrefix "/" | relURL }}" alt="{{ $p.Title }}"></a>{{ end }}
                 <div class="content">
                   <a class="title" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}">{{ $p.Title }}</a>
                   <time datetime="{{ $p.Date.Format "2006-01-02T15:04:05Z07:00" }}" title="发表于 {{ $p.Date.Format "2006-01-02" }}">{{ $p.Date.Format "2006-01-02" }}</time>
@@ -119,7 +119,7 @@
           <ul class="card-archive-list">
             {{ range (where site.RegularPages "Type" "posts").GroupByDate "2006-01" }}
               <li class="card-archive-list-item">
-                <a class="card-archive-list-link" href="{{ "/posts/" | relURL }}#{{ .Key }}">
+                <a class="card-archive-list-link" href="{{ "posts/" | relURL }}#{{ .Key }}">
                   <span class="card-archive-list-date">{{ replace .Key "-" "年" }}月</span>
                   <span class="card-archive-list-count">{{ len .Pages }}</span>
                 </a>

@@ -18,6 +18,8 @@
 {{ else }}
   {{ $topImg = .Params.top_img | default site.Params.default_top_img | default "" }}
 {{ end }}
+{{/* 子路径部署时确保图片路径带 basePath 前缀（外部 URL 保持不变） */}}
+{{ if and $topImg (not (or (hasPrefix "http://" $topImg) (hasPrefix "https://" $topImg))) }}{{ $topImg = (strings.TrimPrefix "/" $topImg) | relURL }}{{ end }}
 {{ if $topImg }}
   {{ if $isPost }}
     {{ $headerClass = "post-bg" }}
@@ -32,7 +34,8 @@
   <nav id="nav">
     <span id="nav-group">
       <span id="blog_name">
-        <a id="site-name" href="{{ "/" | relURL }}" accesskey="h" title="回到首页">
+        {{/* 站点带子路径部署时（如 GitHub Pages 项目站 /blog/），{{ "/" | relURL }} 不会补前缀，需用 site.Home.RelPermalink 才能正确回到首页 */}}
+        <a id="site-name" href="{{ site.Home.RelPermalink }}" accesskey="h" title="回到首页">
           <i class="anzhiyufont anzhiyu-icon-house-chimney"></i>
           <div class="title">{{ site.Title }}</div>
         </a>
@@ -111,14 +114,14 @@
               {{ range $i, $c := .Params.categories }}
                 {{ if $i }}<i class="anzhiyufont anzhiyu-icon-angle-right post-meta-separator"></i>{{ end }}
                 <i class="anzhiyufont anzhiyu-icon-inbox post-meta-icon"></i>
-                <a class="post-meta-categories" href="{{ "/categories/" | relURL }}{{ $c | urlize }}/">{{ $c }}</a>
+                <a class="post-meta-categories" href="{{ "categories/" | relURL }}{{ $c | urlize }}/">{{ $c }}</a>
               {{ end }}
             </span>
           {{ end }}
           {{ if and $pm.tags .Params.tags }}
             <span class="article-meta tags">
               {{ range .Params.tags }}
-                <a class="article-meta__tags" href="{{ "/tags/" | relURL }}{{ . | urlize }}/"><span><i class="anzhiyufont anzhiyu-icon-hashtag"></i>{{ . }}</span></a>
+                <a class="article-meta__tags" href="{{ "tags/" | relURL }}{{ . | urlize }}/"><span><i class="anzhiyufont anzhiyu-icon-hashtag"></i>{{ . }}</span></a>
               {{ end }}
             </span>
           {{ end }}

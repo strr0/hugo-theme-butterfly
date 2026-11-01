@@ -480,6 +480,11 @@ img:not([src]), img[src=''] { opacity: 0; }
 }
 #page-header #nav #nav-right .long#nav-totop:hover { background-color: transparent; }
 
+/* 移动端汉堡按钮：按用户要求全站不挂（≤768 也没有别的入口能展开 #menus）。
+   下方 #toggle-menu a 的圆形按钮样式、partials/header.html 里的标记与 butterfly.js 的
+   initToggleMenu 均保留，要恢复只需在 ≤768 块里补一条 #toggle-menu{display:block}，
+   并同时修抽屉：基态 #nav #menus{display:none} 特异性 (2,0,0) 高于 #menus.menus-show
+   的 (1,1,0)，不把它改成 #nav #menus.menus-show 的话，点了 ≡ 类加上了但仍不会展开。 */
 #toggle-menu { display: none; }
 #toggle-menu a {
   height: 35px;
@@ -492,6 +497,9 @@ img:not([src]), img[src=''] { opacity: 0; }
   color: var(--font-color);
   transition: 0.3s;
 }
+/* 官方 .toggleMenu 里的 svg 是 1.3rem；按钮当前全站不挂，字号规则随之一并移除
+   （若恢复按钮，写 #toggle-menu a i 会被基态 #nav .site-page i{font-size:1em}（1,1,1）压住，
+   需写成 #nav #toggle-menu a i 凑到双 id） */
 
 /* 有头图的页面在顶部时导航完全透明 + 直接元素反白（官方 .headerWrapper.isTransparent.textIsWhite
    与 .headerWrapper.textIsWhite 那一组规则）：
@@ -1073,10 +1081,12 @@ a.categoryButton:after {
   a.categoryButton:after { display: none; }
   .topGroup { display: none; }
 }
-/* ≤768 只再收紧容器左右内边距与上间距（官方站这两项由页面容器控制） */
+/* ≤768 只再收紧容器左右内边距（官方站这两项由页面容器控制）。
+   上间距不在这里重定：官方 500px 视口描边扫描——即刻卡下边缘 109 → 随便逛逛卡上边缘 118，
+   中间正好 8 行背景 = .homeTopContainer{margin:.5rem auto 0}；先前写成 0.2rem 时只剩 3.2px */
 @media screen and (max-width: 768px) {
-  #home_top { padding: 0 20px; }
-  div.swiper_container_card { margin: 0.2rem auto 0; }
+  /* 官方 .post-home-top-container ≤768 是 padding:0 1rem（.content-inner 更窄，是 0 .5rem） */
+  #home_top { padding: 0 1rem; }
 }
 
 /* ========================== 主内容布局 ========================== */
@@ -1209,11 +1219,35 @@ a.catalog-more:hover { color: var(--butterfly-main); background: var(--butterfly
   /* 官方 ≤768 .categoryBar{background:0 0;border:none;padding:0 2px}：移动端不再有白卡 */
   #category-bar.category-bar { width: 100%; background: 0 0; }
   #category-bar.category-bar:hover { border: none; box-shadow: none; }
-  #category-bar { border: none; border-radius: 0; padding: 0.5rem 20px; }
+  /* 官方 ≤768 .categoryBar{padding:0 2px}：必须连上下内边距一起清掉，否则 50px 的高度里
+     只剩 34px 内容高，80% 的胶囊会缩到 27px（官方实测 40px） */
+  #category-bar { border: none; border-radius: 0; padding: 0 2px; }
   /* 官方 ≤768 .catalogBar / .catalogList 高度撑满，条目变胶囊 */
   #category-bar #catalog-bar { margin: 0; height: 100%; }
-  #catalog-list { height: 100%; }
-  .catalog-list-item { display: flex; align-items: center; justify-content: center; }
+  /* 官方 .catalogBar{overflow-x:auto; scrollbar-width:none}：移动端分类超出屏宽时改成手指横滑
+     （桌面维持基态的裁切）。三处细节：
+     ① 滚动容器挂在 #catalog-list，不是 #catalog-bar——后者还装着翻页按钮与「更多」，
+        官方那两个元素在滚动区之外，挂在 #catalog-bar 上会被一起滚走；
+     ② min-width:0 让 #catalog-list 能缩到容器宽，溢出发生在它自己身上——不给它的话
+        flex 子项默认 min-width:auto 会撑开父级，而基态 #catalog-bar{overflow-y:hidden} 会让
+        overflow-x 的计算值从 visible 变成 auto，滚动条就跑到外层去了；
+     ③ overscroll-behavior-x:contain 隔掉横向滑动到底后的浏览器前进/后退手势（官方无此条，
+        但它是 overflow-x:auto 在移动端的标配，不改变观感） */
+  #catalog-list {
+    height: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  /* flex-shrink:0：胶囊不能被压缩（不换行靠基态的 white-space:nowrap 保证） */
+  .catalog-list-item {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  }
   /* 官方 ≤768 .catalogListItem span{card-bg + style-border-always + radius 30px + height 80% + padding 0 19px + 14px} */
   .catalog-list-item a {
     height: 80%;
@@ -1226,6 +1260,9 @@ a.catalog-more:hover { color: var(--butterfly-main); background: var(--butterfly
   }
   /* 官方 ≤768 .catalogListItem span:hover{background:main;color:white}（桌面端 hover 是灰底，移动端回到主色） */
   .catalog-list-item:hover a { background: var(--butterfly-main); color: var(--butterfly-white); }
+  /* 基态 .catalog-list-item.select a 的特异性 (0,2,1) 高于本块的 .catalog-list-item a (0,1,1)，
+     会把移动端 30px 圆角压回桌面的 8px；官方 .select 只换底色不动圆角，故补一条同向修正 */
+  #category-bar .catalog-list-item.select a { border-radius: 30px; }
   /* 官方预览站 ≤768 .catalogMore{display:none}：移动端不显示“更多” */
   #category-bar a.catalog-more { display: none; }
 }
@@ -2386,6 +2423,12 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
   /* 右侧悬浮目录按钮仅移动端显示（原版 rightside #mobile-toc-button） */
   #rightside #mobile-toc-button { display: flex; }
 }
+/* 官方 Sidebar.module.css ≤992{.asideContent{display:none}}：窄屏不在正文下方整块列出侧栏。
+   只做首页——文章页的侧栏里挂着目录卡（#card-toc 抽屉靠它），整块隐藏会打断移动端目录 */
+@media screen and (max-width: 992px) {
+  /* 需带 #body-wrap.home 才能压过上方 ≤1200 给 #aside-content 定的 grid 布局 */
+  #body-wrap.home #aside-content { display: none; }
+}
 @media screen and (max-width: 768px) {
   #page-header.not-home-page { height: 280px; }
   #page-site-info { top: 140px; }
@@ -2395,13 +2438,21 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
   #site-title { font-size: 1.85em; }
   #site-subtitle { font-size: 1.15em; }
   #site_social_icons { display: block; }
-  /* 移动端导航：去底边，中部菜单改由汉堡按钮展开（背景跟基础规则走顶部/滚动两态） */
-  #page-header #nav { padding: 20px; border-bottom: none; }
+  /* 移动端导航：去底边（中部菜单在 ≤768 隐藏且无展开入口，见基态 #toggle-menu 那条注释）。
+     官方 ≤768 是 .headerContent{padding:0 1rem} + .headerRight{padding:0 1.2rem}：
+     横向内边距只挂在 #nav-group / #nav-right 两层上，#nav 自己必须归 0——
+     早先写 padding:20px 会与 #nav-group 的 24px 叠加，站名落在 x=44、图标距右 44（官方 16 / 19.2） */
+  #page-header #nav { padding: 0; border-bottom: none; }
+  #nav-group { padding: 0 1rem; }
+  #nav-right { padding: 0 1.2rem; }
   /* 页面名进场只在桌面生效（官方 ≤992px 隐藏中部菜单后同样不显示） */
   #page-name-mask { display: none; }
   /* 基础规则 #nav #menus (2,0,0) 压过单 id，移动端隐藏需同特异性 */
   #nav #menus { display: none; }
-  #toggle-menu { display: block; }
+  /* ≡ 按钮按用户要求全站不挂（抽屉本身因上述特异性 bug 也从未真正展开），
+     基态 #toggle-menu{display:none} 直接生效，此处不再补 display:block */
+  /* 官方 HeaderRight：窄屏不渲染随机文章（JS 里的 !isMobile）与中控台（≤768 display:none） */
+  #nav #random-post-button { display: none; }
   /* 移动端菜单展开 */
   #menus.menus-show {
     display: flex;
@@ -2437,14 +2488,39 @@ span.tags-punctuation i, span.categoryes-punctuation i { font-size: 13px; }
   }
   /* 原版 common.styl L30-31：移动端容器左右收窄到 15px，卡片 margin 20px 后总留白 35px */
   #content-inner.layout { padding: 20px 15px; }
+  /* 首页另按官方 .content-inner ≤768{padding:0 .5rem} 收左右——基态那条 #body-wrap.home 的选择器
+     特异性 (1,2,0) 高于上面的 #content-inner.layout (1,1,0)，只改通用规则压不住它，
+     卡片左右留白一直是 24px（官方实测 8px + 1px 描边）。
+     上边距与官方源码不同：通用档给的是 0，但首页 HomeTop 与分类条之间官方实测有 8px
+     （500px 视口描边：卡片下边缘 455 → 胶囊盒顶 464；胶囊在 50px 盒内居中，看上去是 13px），
+     故首页这一档取 .5rem，与桌面端 home 变体同源 */
+  #body-wrap.home #content-inner.layout { padding: 0.5rem 0.5rem 1rem; }
   /* 线上站 ≤768：doubleColumnContainer 转单列 gap .75rem，卡片通栏无左右 margin */
   #recent-posts > .recent-post-item:not(:first-child) { margin: 12px 0 0; }
-  #recent-posts > .recent-post-item.lastestpost-item { margin-top: 10px !important; }
+  /* 分类条到首张卡：官方是 .categoryBarContainer{margin-bottom:.5rem} + .main-content{gap:.25rem}
+     = 12px，和卡片之间的 gap 同值（原来的 10px 会让首卡比后续卡片更贴分类条） */
+  #recent-posts > .recent-post-item.lastestpost-item { margin-top: 12px !important; }
   #recent-posts .post_cover { width: 100%; height: 200px; order: 0 !important; }
-  #recent-posts > .recent-post-item > .recent-post-info { width: 100%; min-height: 140px; }
+  /* 官方 ≤768 .recentPostInfo{padding:1rem} + .articleMetaWrap{margin-top:auto}：信息区高由内容决定，
+     meta 走正常流被顶到底部。基态的 height:174px + meta absolute bottom:30px 是为桌面左右分栏定的，
+     移动端改成上下堆叠后会剩下「标题与 meta 之间 45px 空洞 + 底部 30px 死白」 */
+  #recent-posts > .recent-post-item > .recent-post-info {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding: 1rem;
+  }
+  #recent-posts .recent-post-info-top { padding: 0; }
+  #recent-posts .recent-post-info-top-tips { margin-top: 0; gap: 4px; }
+  #recent-posts .article-meta-wrap { position: static; margin-top: auto; padding: 0; }
+  /* 摘要是 opacity:0 + height:0 藏起来的（基态 margin-top:.5rem 仍在），meta 改成正常流后
+     这 8px 会变成卡片底部的死白（实测 meta 下方留白 24px，应为 padding 的 16px） */
+  #recent-posts .recent-post-info > .content { margin-top: 0; }
   #recent-posts .recent-post-info.no-cover { padding: 30px 20px; }
   #recent-posts .article-meta-wrap .article-meta-separator { display: none; }
-  .article-title { font-size: 19px; line-height: 23px; }
+  .article-title { font-size: 1.2rem; line-height: 1.2; margin-bottom: 1rem; }
   #aside-content { grid-template-columns: 1fr; }
   #aside-content .sticky_layout { grid-column: span 1; grid-template-columns: 1fr; }
   #aside-content .card-info { display: none; }

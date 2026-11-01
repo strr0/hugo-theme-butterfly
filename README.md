@@ -109,7 +109,7 @@ themes/butterfly/
 │   └── partials/
 │       ├── head.html            # meta / 资源 / 深浅色预初始化 / 主题配置注入（含 KaTeX 样式表按需引入）
 │       ├── math-enabled.html    # 数学公式开关判定（渲染钩子与 head 共用）
-│       ├── header.html          # 顶部导航（含搜索入口、随机文章、移动端汉堡菜单）
+│       ├── header.html          # 顶部导航（含搜索入口、随机文章；汉堡按钮标记在但 CSS 全站不显示）
 │       ├── essay_bar.html       # 首页「即刻」说说条
 │       ├── home_top.html        # 首页顶部卡片区 #home_top
 │       ├── category_bar.html    # 首页与分类列表页顶部的分类导航条
@@ -370,6 +370,7 @@ Hexo 的 `katex_copytex` 右键复制源码；MathJax `tags:'ams'` 的自动编�
 
 - **桌面端菜单是纯文字**（官方 `.menuTitle{font-size:1rem; letter-spacing:.3rem}`），`params.icon` 只在
   ≤768px 的汉堡抽屉里出现——DOM 里照常渲染 `<i>`，由 `@media (min-width:769px)` 隐藏，改菜单时两边都会跟着变。
+  （但该抽屉目前**没有展开入口**，所以下面的图标在窄屏也不会真正出现，见「已知限制」。）
 - 顶部**不配「首页」菜单项**（左侧站名就是回首页入口），当前为「文章 / 分类 / 标签 / 关于」；
   官方示例站顶部只放「文库 / 友链 / 我的 / 关于」，具体条目属于站点 `[menu.main]` 的内容配置，不是主题差异。
 - 随机文章入口**不在菜单里**：它固定在右侧 `#nav-right #random-post-button`（`anzhiyu-icon-dice`，
@@ -401,7 +402,7 @@ Hexo 的 `katex_copytex` 右键复制源码；MathJax `tags:'ams'` 的自动编�
 `default_top_img`）/ `post-bg`（文章页）三种 class 之一，CSS 直接用 `:not(.not-top-img)` 判定。官方只对
 文章详情 / 音乐 / 一图流页开白字，本站其余头图页同样是头图铺到导航背后，不反白就读不了，因此放宽到“有头图”统一判定。
 “在顶部”用 `:not(.has-scroll)`（官方 `isTransparent` 即 `scrollY === 0`），滚 1px 就整体回到卡片态；两态过渡 0.3s。
-移动端展开的抽屉 `#menus.menus-show` 自带卡片底色，用 `:not(.menus-show)` 排除，不参与反白。
+移动端展开的抽屉 `#menus.menus-show` 自带卡片底色，用 `:not(.menus-show)` 排除，不参与反白（该抽屉目前无展开入口）。
 
 ## 文章 Front Matter
 
@@ -460,6 +461,23 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   挤在同一条 flex line，并被默认的 `align-items:stretch` 拉到与卡片等高（标签 ≤3 个时胶囊变成竖长条；标签多时
   标签条自身已有几行高，所以一直看不出来）。分类条不受影响是因为 `#category-bar` 写死了 `width:100%` + `height:50px`。
 
+### 移动端（≤768）对齐基准
+
+官方窄屏的规格与桌面不同源（也不是把桌面值按比例缩），改移动端样式时直接查 Next 版那几个
+`@media (max-width: 768px)`。390px 视口下的实测值：
+
+| 区域 | 官方规格（源码位置） | 移植版落点 / 坑 |
+| --- | --- | --- |
+| 顶部导航 | `.headerContent ≤768{padding:0 1rem}`（`Header.module.css`）+ `.headerRight ≤768{padding:0 1.2rem}`（`HeaderRight/styles.module.css`）；骰子、开往按 JS 里的 `!isMobile` 不渲染；汉堡 `.toggleMenu` 内图标 `1.3rem` | 390px 实测：站名 x=16、最右图标距右 19.2、汉堡图标 20.8px。两个坑：① 横向内边距只能挂在 `#nav-group` / `#nav-right` 两层，`#page-header #nav` 必须归 0，早先写的 `padding:20px` 会与 `#nav-group` 的 24px 叠加，把站名推到 x=44；② 汉堡字号规则要写成 `#nav #toggle-menu a i`（双 id），单 id 会被基态 `#nav .site-page i{font-size:1em}`（1,1,1）压住。**本站按用户要求已全站去掉 ≡**（基态 `#toggle-menu{display:none}` 不再被 ≤768 块覆盖，上一条字号规则也随之删除），因为实测点它没反应——见「已知限制」 |
+| 页面容器 | `.content-inner ≤768{padding:0 .5rem}`（`globals.css`），HomeTop 是另一档 `.post-home-top-container ≤768{padding:0 1rem}` | 首页 `#body-wrap.home #content-inner.layout{padding:.5rem .5rem 1rem}`（上边距比官方源码多留 `.5rem`，理由见下一行）、`#home_top{padding:0 1rem}`；文章页保持 `padding:20px 15px` 不动。**基态那条 `#body-wrap.home` 特异性 (1,2,0) 高于 `#content-inner.layout`，只改通用规则压不住它** |
+| 随便逛逛卡上下间距 | 上：`.homeTopContainer{margin:.5rem auto 0}` = 8px；下：卡片与分类条盒之间 8px（胶囊在 50px 盒内居中，视觉 13px）。500px 视口描边实测：即刻卡底 109 → 卡顶 118 → 卡底 455 → 胶囊顶 469 | 上间距由基态 `.swiper_container_card{margin:.5rem auto 0}` 直接命中（曾在 ≤768 被重定成 `0.2rem`，实测只剩 3.2px），下间距由首页 `#content-inner` 的 `padding-top:.5rem` 提供（官方源码该档是 0，但实测有 8px，以实测为准） |
+| 文章卡 | ≤768 单列通栏，封面 `height:200px`，信息区**不定高** + `padding:1rem`，meta 用 `margin-top:auto` 走正常流（`FeedArticleCard.module.css`） | 同左。基态的 `height:174px` + meta `absolute bottom:30px` 是给桌面左右分栏定的，移动端沿用会留下「标题与 meta 间 45px 空洞 + 底部 30px 死白」；另外隐藏的摘要 `.content{margin-top:.5rem}` 在正常流里还会多出 8px 死白，移动端要归 0 |
+| 卡片纵向间距 | 三档全部拉开为 12 / 12 / 16px：卡↔卡 `.doubleColumnContainer ≤768{gap:.75rem}`（卡片自身 `margin:0`）、分类条→首卡 `.categoryBarContainer{margin-bottom:.5rem}` + `.main-content{gap:.25rem}`、末卡→分页 `.paginationNav{margin:1rem 0 0}` | 同值。两个坑：① 卡↔卡间距取决于官方 `post.default.double_column`——为 `true` 时走 `margin:0` + 12px gap（线上站实测 12px，即此档），为 `false` 时 `.recentPostItem{margin:1rem 0}` 在 flex 列里**不合并**，会变成 16+12+16=44px；② 首卡那条原先写 10px，比后面的卡片更贴分类条 |
+| 分类胶囊 | `.categoryBar ≤768{padding:0 2px}` + `.catalogListItem span{height:80%; border-radius:30px}` → 胶囊高 40（`CategoryBar.module.css`）；溢出时 `.catalogBar{overflow-x:auto; scrollbar-width:none}` 手指横滑，`.catalogMore` 隐藏、`.categoryBarNext` 仅在溢出时出现 | `#category-bar` 在移动端必须连**上下**内边距一起清掉，否则 50px 高度里只剩 34px 内容高，80% 的胶囊缩到 27px。选中项另需 `#category-bar .catalog-list-item.select a{border-radius:30px}`：基态 `.select` 把圆角钉成桌面的 8px，特异性 (0,2,1) 高于移动端那条 (0,1,1)。横滑两个坑：① 滚动容器挂在 `#catalog-list` 而非 `#catalog-bar`（后者还装着翻页按钮与「更多」，官方那两个在滚动区之外）；② 要给 `#catalog-list` 补 `min-width:0`，否则 flex 子项默认 `min-width:auto` 撑开父级，而基态 `#catalog-bar{overflow-y:hidden}` 会让它的 `overflow-x` 计算值从 visible 变成 auto，滚动就跑到外层、按钮被一起滚走。390px 实测：list `client 320 / scroll 1090` 可滑，bar `360/360` 不滑，滑到底 `scrollLeft=770` 时按钮加 `.is-rotated` 且 `left=340` 钉在右端；桌面端（1390）仍是 `overflow-x:hidden`、全部放得下、按钮不显示 |
+| 侧边栏 | `.asideContent ≤992{display:none}`（`Sidebar.module.css`） | 只隐藏首页（`#body-wrap.home #aside-content`）——文章页的侧栏里挂着移动端目录抽屉 `#card-toc`，整块隐藏会打断它 |
+
+- 卡片日期官方是**相对时间**（「4个月前」），本站仍是绝对日期，属内容/行为层，未随这轮样式改动。
+
 ## 参照文件速查（原版 ↔ 移植版）
 
 补功能或改样式时先在上游找到对应文件，不要凭记忆猜结构。**观感/几何以 Next 版为准，DOM 结构以 Hexo 版为旁证**。
@@ -493,7 +511,8 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   `[data-theme="dark"]` 前缀覆盖。设 `line-height` 时注意本主题 body 是 `2`（远大于 Tailwind 的 1.5），
   从官方搬过来的「内容撑高」规则需显式收紧行高，否则会被 flex 收缩连带影响兄弟元素。
 - **图标**：远程 iconfont 的 CDN 自带 `.anzhiyufont{font-size:16px}`，会截断字号继承——要放大图标必须用
-  高于该选择器的规则**直接命中 `i` 元素**，只改父级字号无效。
+  高于该选择器的规则**直接命中 `i` 元素**，只改父级字号无效。直接命中也不够：主题基态有一条
+  `#nav .site-page i{font-size:1em}`（特异性 1,1,1），单 id 规则会被它压住，导航内的图标需写成 `#nav … i`。
 - **内联 `style` 属性里的 CSS 必须过 `safeCSS`**：Go 的 html/template 会对 `style="..."` 插入值跑 CSS  sanitizer，
   `background: url('/x.jpg') top / cover no-repeat fixed;` 这种简写会被判为不安全而整条替成 `style="ZgotmplZ"`（头图
   静默不渲染，构建不报错），模板里写 `style="{{ . | safeCSS }}"`。
@@ -502,6 +521,9 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   测 hover 态（如「随便逛逛」浮层）时 headless 无法真实悬停，需临时放一个同源 iframe 探针页注入 inline style，
   且**必须先 `transition = 'none'`**——`--virtual-time-budget` 不推进 CSS 过渡的动画时钟，否则量到的仍是过渡起始值。
   探针页属临时取证产物，用完即删。
+  对窄屏做**左右并排 A/B** 很省事：一个探针页放两个 390px iframe（左本地、右 `blog.anheyu.com`），
+  出一张长图再按 800px 分段裁开逐段比对（官方站未设 `X-Frame-Options`，可直接嵌）；
+  肉眼比不准的几何值仍回同源 iframe 探针量 `getBoundingClientRect` / `getComputedStyle`。
   **量移动端几何不要用 `--window-size=390/420`**：Chromium 有约 500px 的最小窗口宽度，写小了仍按 500 布局，
   截图只截到左边那一段，看起来像「右侧被裁、整页横向溢出」的假 bug（实测同一页 420 窗口截图被裁，
   而同源 iframe 探针里 `vw=390`、`docScrollW=390` 完全正常）。窄视口一律改用 iframe 探针量。
@@ -510,6 +532,10 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   虚拟时间会被**真实网络请求消耗**（CDN 字体、远程图床），预算给到 40s 也可能只跑到第 60 个 tick；
   同源 iframe 的 `onload` 会被页面内远程图片拖住，快照时常常还没触发，改用 `setInterval` 轮询，
   并分两轮测量（先读结构与计算样式，字体就绪后再复测依赖宽度的结论）。
+  **量官方窄屏的纵向间距时可以不做 iframe**：上下间距是 rem 定的、与视口宽度无关，
+  而 Chromium 最小窗口宽约 500px 仍命中 `max-width:768px`，所以直接 `--window-size=500,1700 --screenshot`
+  打开 `blog.anheyu.com`，再用 `#e3e8f7` 描边扫描（单行命中宽度 ≥60% 即一条水平边框）就能拿到卡片
+  上下边缘的 1px 精度行号——比在跳域 iframe 里读 DOM（会被 CORS 拦住）可靠得多。
   测滚动态（如 `nav-menu-scrolled`）时用 `document.scrollingElement.scrollTop = 600` +
   `dispatchEvent(new Event('scroll'))` 驱动（headless 虚拟时间下 `window.scrollTo()` 不生效），再读
   `getComputedStyle` 与 `getBoundingClientRect()`。另注意图标字体由远程 CDN 加载，`--virtual-time-budget`
@@ -534,6 +560,12 @@ description: "本页 SEO 描述"       # 缺省回退 params.description；写�
   `id="分类名"`，两处口径对不上：英文分类因 URL 小写化永远查不中，且 `urlinfo === location.pathname`
   这条首页判定对所有不含 %XX 的地址恒为真，于是英文分类页反而点亮「首页」（现已删除该函数）。
   中文分类名恰好 URL 与标题一致，所以这个 bug 长期只影响英文分类。
+- **移动端没有导航菜单入口**（已知 bug + 有意取舍）：≡ 按钮点下去 `butterfly.js` 确实会给 `#menus` 加上
+  `.menus-show`，但基态隐藏规则 `#nav #menus{display:none}` 的特异性是 (2,0,0)，高于展开规则
+  `#menus.menus-show{display:flex}` 的 (1,1,0)，于是抽屉从未真正展开（390px 探针实测：类已加但
+  `display=none`、`rect 0x0`）。作者看过取证后决定**索性全站去掉 ≡**（官方窄屏是有可用抽屉的，属已知的有意分歧），
+  所以 ≤768 只能靠分类条 / 页脚 / 卡片链接导航。要恢复：在 ≤768 块补 `#toggle-menu{display:block}`，
+  并把展开规则改成 `#nav #menus.menus-show`（另外 `#toggle-menu a i` 的字号需写成双 id，见「开发约定」的图标那条）。
 - **图标依赖远程图标字体**：离线环境或镜像失效时图标会缺失，可自建镜像后替换 `params.iconfont_css`。
 - **未移植模块**：评论区、音乐播放器、图片 Lightbox、右键菜单、PWA、加载动画（`static/img/loading.gif` 已就位但无调用方）、
   简繁切换、友链 / 朋友圈 / 说说等特色页面、文章上下篇导航、`404.html` 页面（主题没有 404 模板，需自行补）。

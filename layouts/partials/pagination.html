@@ -1,14 +1,31 @@
 {{ $p := .Paginator }}
+{{/* 页码显示逻辑照 LoveIt 主题 layouts/partials/paginator.html：
+   - 首页（1）、末页（total）常驻；
+   - 当前页左右各 2 页（LoveIt 原文写作 gt n (sub cur 3) && lt n (add cur 3)，等价于这里的闭区间 ±2）；
+   - 其余区间各补一个省略号（LoveIt 用 Scratch 的 ellipsed/shouldEllipse 状态机做到「一段缺口只出一个」，
+     这里用「下一个保留页与上一个保留页不连续」判断，效果相同）；
+   - 全列特例（用户指定保留，LoveIt 本身没有）：总数不超过窗口容量 2*span+1 = 5 时整排列出，
+     以免出现「省略号只盖住一个页码」（如 5 页停在第 1 页本会写成 1 2 3 … 5）。
+   上下页箭头是我们自己的（LoveIt 只有数字），移动端按 anzhiyu 原版只留这两个箭头按钮并显示文字。 */}}
 {{ if or (gt $p.TotalPages 1) $p.HasPrev $p.HasNext }}
+  {{ $span := 2 }}
+  {{ $total := $p.TotalPages }}
+  {{ $cur := $p.PageNumber }}
+  {{ $compact := gt $total (add (mul $span 2) 1) }}
+  {{ $lastShown := 0 }}
   <nav id="pagination">
-    {{ if $p.HasPrev }}
-      <a class="extend prev" rel="prev" href="{{ $p.Prev.URL }}"><i class="anzhiyufont anzhiyu-icon-angle-left"></i></a>
+    {{ if $p.HasPrev }}<a class="extend prev" rel="prev" href="{{ $p.Prev.URL }}"><i class="anzhiyufont anzhiyu-icon-angle-left"></i><span class="extend-text">上一页</span></a>{{ end }}
+    {{ range $pager := $p.Pagers }}
+      {{ $n := $pager.PageNumber }}
+      {{ $keep := or (not $compact) (eq $n 1) (eq $n $total) (and (ge $n (sub $cur $span)) (le $n (add $cur $span))) }}
+      {{ if $keep }}
+        {{ if and $compact (gt $lastShown 0) (gt $n (add $lastShown 1)) }}
+          <span class="space">&hellip;</span>
+        {{ end }}
+        <a class="page-number{{ if eq $pager $p }} current{{ end }}" href="{{ $pager.URL }}">{{ $n }}</a>
+        {{ $lastShown = $n }}
+      {{ end }}
     {{ end }}
-    {{ range $p.Pagers }}
-      <a class="page-number{{ if eq . $p }} current{{ end }}" href="{{ .URL }}">{{ .PageNumber }}</a>
-    {{ end }}
-    {{ if $p.HasNext }}
-      <a class="extend next" rel="next" href="{{ $p.Next.URL }}"><i class="anzhiyufont anzhiyu-icon-angle-right"></i></a>
-    {{ end }}
+    {{ if $p.HasNext }}<a class="extend next" rel="next" href="{{ $p.Next.URL }}"><span class="extend-text">下一页</span><i class="anzhiyufont anzhiyu-icon-angle-right"></i></a>{{ end }}
   </nav>
 {{ end }}
